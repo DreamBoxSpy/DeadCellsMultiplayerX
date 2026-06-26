@@ -76,6 +76,7 @@ namespace DeadCellsMultiplayerX.Client.UI
                 ModConfig.Config.Save();
             }
         }
+        public int curleftbtn { get; set; } = 0;
         private long latencyMs;
 
 
@@ -174,11 +175,14 @@ namespace DeadCellsMultiplayerX.Client.UI
 
         public void Hide()
         {
+            mainFlow?.removeChildren();
             mainFlow?.remove(); mainFlow = null;
             infoFlow?.remove(); infoFlow = null;
             tabFlow = null; leftFlow = null; rightFlow = null;
             currentMode = null;
             loadingFlow.Clear();
+            btns.Clear();
+            topbtns.Clear();
             titleScreen.controller.manualLock = false;
             titleScreen.unblur();
         }
@@ -215,6 +219,7 @@ namespace DeadCellsMultiplayerX.Client.UI
             if (rightFlow == null || leftFlow == null) return;
             this.isHost = ishost;
 
+
             ClearContent(rightFlow);
             ClearContent(leftFlow!);
 
@@ -234,10 +239,13 @@ namespace DeadCellsMultiplayerX.Client.UI
         /// </summary>
         private void BuildDefaultButtons()
         {
-            BuildLeftBtn(T("CreateRoom"), () => { if (currentMode != null) ShowHost(currentMode); });
-            BuildLeftBtn(T("JoinRoom"), () => { if (currentMode != null) ShowClient(currentMode); });
+            btns.Clear();
+            ClearContent(leftFlow!);
+
+            BuildLeftBtn(T("CreateRoom"), () => { if (currentMode != null) ShowHost(currentMode); onResize(); });
+            BuildLeftBtn(T("JoinRoom"), () => { if (currentMode != null) ShowClient(currentMode); onResize(); });
             currentMode?.BuildMenu();
-            BuildLeftBtn(T("return"), Hide);
+            BuildLeftBtn(T("return"), () => delayer.addF(null, Hide, 1));
 
             void ShowHost(ModeConfig mode)
             {
@@ -266,13 +274,48 @@ namespace DeadCellsMultiplayerX.Client.UI
         {
             BuildLeftBtn("开始游戏", async () =>
             {
+                var players = client?.CurrentGuestClient?.LobbyInfo?.Guests;
+                if (players == null)
+                {
+                    ShowError(() => { }, "连接异常无法开始游戏");
+                    return;
+                }
+
+                bool canstart = true;
+                List<string> name = [];
+                foreach (var item in players)
+                {
+                    if (!item.Value.IsReady)
+                    {
+                        canstart = false;
+                        name.Add(item.Value.Name);
+                    }
+
+                }
+                if (!canstart)
+                {
+                    ShowError(() =>
+                    {
+                        RefreshLobbySlots();
+                    }, $"玩家: {string.Join(",", name)} 未准备，无法开始游戏");
+                    return;
+                }
                 currentMode?.OnHostStartGame();
+                onResize();
             });
             BuildLeftBtn(T("return") + T("并销毁房间"), () =>
             {
                 currentMode?.OnHostLeave();
                 Return();
             });
+
+            void ShowError(HlAction retry, string text = "")
+            {
+                logger.Error(text);
+                var pop = new ModalPopUp(Ref<bool>.In(false), null);
+                pop.text(text.AsHaxeString(), null, default);
+                pop.onClose = retry;
+            }
         }
 
         /// <summary>
@@ -358,13 +401,26 @@ namespace DeadCellsMultiplayerX.Client.UI
                 updateHSprite(tapselection);
 
             //联机模式切换
-            if (controllerHelper != null && defaultbtns != null)
+            if (controllerHelper != null && defaultbtns != null && !lockInter)
             {
                 if (controllerHelper.IsPressed(keys[ControllerKey.Tab_Exchange_E]))
                     SwitchMode(1);
 
                 if (controllerHelper.IsPressed(keys[ControllerKey.Tab_Exchange_Q]))
                     SwitchMode(-1);
+
+                if (controllerHelper.IsPressed(keys[ControllerKey.Default_UP]))
+                    MoveLeftBtn(-1);
+
+                if (controllerHelper.IsPressed(keys[ControllerKey.Default_DOWN]))
+                    MoveLeftBtn(1);
+
+                if (controllerHelper.IsPressed(keys[ControllerKey.Confirm]))
+                {
+                    if (btns.Count == 0) return;
+                    var btn = btns[curleftbtn];
+                    btn?.interactive?.onClick?.Invoke(null!);
+                }
             }
 
 
@@ -372,6 +428,8 @@ namespace DeadCellsMultiplayerX.Client.UI
 
             void SwitchMode(int step)
             {
+                if (topbtns.Count == 0) return;
+
                 curTopbts += step;
 
                 if (curTopbts < 0)
@@ -395,6 +453,7 @@ namespace DeadCellsMultiplayerX.Client.UI
                 double cos = Lib_std.math_cos.Invoke((double)(ftime * 0.1 * v!));
                 spr.alpha = 0.8 + 0.2 * cos;
             }
+
         }
 
 
@@ -516,7 +575,22 @@ namespace DeadCellsMultiplayerX.Client.UI
                 }
             }
 
-            delayer.addF(null, () => { BuildInformation(); onResizeAllloadingFlow?.Invoke(); }, 1);
+
+            delayer.addF(null, () =>
+            {
+                BuildInformation();
+                onResizeAllloadingFlow?.Invoke();
+
+                if (btns.Count != 0)
+                {
+                    while (btns.Count < curleftbtn)
+                    {
+                        curleftbtn--;
+                    }
+                    btns[curleftbtn]?.interactive?.onMove?.Invoke(null!);
+                }
+
+            }, 1);
 
         }
         #endregion
@@ -539,12 +613,8 @@ namespace DeadCellsMultiplayerX.Client.UI
             keys.Add(ControllerKey.Default_DOWN, 12);
             keys.Add(ControllerKey.Default_Left, 11);
             keys.Add(ControllerKey.Default_Rigth, 13);
-
-            // //test
-            // btns.push(creataBCreateButton(10, "上"));
-            // btns.push(creataBCreateButton(12, "下"));
-            // btns.push(creataBCreateButton(11, "左"));
-            // btns.push(creataBCreateButton(13, "右"));
+            keys.Add(ControllerKey.Confirm, 14);
+            keys.Add(ControllerKey.Cancel, 16);
 
 
             defaultbtns = (ArrayObj)ArrayUtils.CreateDyn().array;
@@ -700,8 +770,7 @@ namespace DeadCellsMultiplayerX.Client.UI
             if (curTopbts >= modes.Count) curTopbts = 0;
             if (modes.Count > 0) SelectMode(modes[curTopbts]);
 
-            btns.Clear();
-            ClearContent(leftFlow!);
+
             BuildDefaultButtons();
 
 
@@ -924,6 +993,23 @@ namespace DeadCellsMultiplayerX.Client.UI
             btns.Add(data);
         }
 
+        private void MoveLeftBtn(int step)
+        {
+            if (btns.Count == 0) return;
+            curleftbtn += step;
+
+            if (curleftbtn < 0)
+                curleftbtn = btns.Count - 1;
+            else if (curleftbtn >= btns.Count)
+                curleftbtn = 0;
+
+            var btn = btns[curleftbtn];
+            btn?.interactive?.onMove?.Invoke(null!);
+            AudioHelper.LoadAudioFormString("sfx/ui/menu_click1.wav");
+        }
+
+
+
 
         /// <summary>
         /// 联机模式
@@ -1083,6 +1169,8 @@ namespace DeadCellsMultiplayerX.Client.UI
             var loading = item.Item1;
             var mask = item.Item2;
 
+            if (loading == null) return;
+
             loading.text?.remove();
             loading.text = Assets.Class.makeMedievalText.Invoke(text.AsHaxeString(), null, loading.loadingFlow, null);
             loading.onResize(ScreenW, ScreenH);
@@ -1104,6 +1192,7 @@ namespace DeadCellsMultiplayerX.Client.UI
         /// <param name="s"></param>
         public void LoaddingOut(double s = 1.0)
         {
+
             var item = loadingFlow[mainFlow!];
             var loading = item.Item1;
             var mask = item.Item2;
@@ -1111,12 +1200,18 @@ namespace DeadCellsMultiplayerX.Client.UI
             var animout = CreateTween(() => mask.alpha, (v) => { mask.alpha = v; mask.posChanged = true; }, 0, s);
             animout.end(() =>
             {
-                loading.text.set_text("".AsHaxeString());
+                if (loading != null)
+                {
+                    loading.text?.set_text("".AsHaxeString());
+                    loading.bgMask.set_visible(false);
+                    loading.posChanged = true;
+                }
+                if (mask != null)
+                {
+                    mask.set_visible(false);
+                    mask.posChanged = true;
+                }
                 lockInter = false;
-                mask.set_visible(false);
-                loading.bgMask.set_visible(false);
-                mask.posChanged = true;
-                loading.posChanged = true;
             });
         }
 

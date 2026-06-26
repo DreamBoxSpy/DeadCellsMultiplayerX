@@ -1,4 +1,6 @@
 using dc.ui;
+using HaxeProxy.Runtime;
+using ModCore.Utilities;
 
 namespace DeadCellsMultiplayerX.Client.UI.Modes
 {
@@ -11,12 +13,20 @@ namespace DeadCellsMultiplayerX.Client.UI.Modes
             Manager.LoadImageTorightFlow("DeadCellsMultiplayerX/Image/lobbyTile_2.png");
         }
 
-        public override void OnHost(Action onend) { }
-        public override void OnClient(Action canEnter) { }
+        public override void OnHost(Action onend) { ShowError(() => { }, "Steam连接暂不可用"); }
+        public override void OnClient(Action canEnter) { ShowError(() => { }, "Steam连接暂不可用"); }
         public override void Update() { }
         public override void OnHostLeave() { }
         public override void OnClientLeave() { }
-        public override void OnHostStartGame(){}
+        public override void OnHostStartGame() { }
+
+        private void ShowError(HlAction retry, string text = "请输入正确IP及端口")
+        {
+            logger.Error(text);
+            var pop = new ModalPopUp(Ref<bool>.In(false), null);
+            pop.text(text.AsHaxeString(), null, default);
+            pop.onClose = retry;
+        }
 
     }
 }

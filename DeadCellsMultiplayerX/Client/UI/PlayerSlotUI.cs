@@ -245,24 +245,25 @@ namespace DeadCellsMultiplayerX.Client.UI
 
             for (int i = 0; i < guestList.Count; i++)
             {
-                int index = i;
-                var guest = guestList[index];
+                var guest = guestList[i];
 
-                if (Slots[index].Guest?.Guid == guest.Guid)
+                if (Slots[i].Guest?.Guid == guest.Guid)
                 {
-                    Slots[index].Guest = guest;
-                    Slots[index].RefreshStatus();
+                    Slots[i].Guest = guest;
+                    Slots[i].RefreshStatus();
                     continue;
                 }
 
-                if (Slots[index].Guest != null)
-                    Slots[index].Clear();
+                if (Slots[i].Guest != null)
+                    Slots[i].Clear();
 
+                if (Slots[i].Guest?.Guid != guest.Guid)
+                    Slots[i].Bind(guest);
+            }
 
-                if (Slots[index].Guest?.Guid != guest.Guid)
-                {
-                    Slots[index].Bind(guest);
-                }
+            for (int i = guestList.Count; i < Slots.Length; i++)
+            {
+                Slots[i].Clear();
             }
         }
 
@@ -278,9 +279,12 @@ namespace DeadCellsMultiplayerX.Client.UI
         public void ClearAll()
         {
             foreach (var s in Slots) s.Clear();
-            Container.removeChildren();
-            Container.remove();
-            Container = null!;
+            if (Container != null)
+            {
+                Container.removeChildren();
+                Container.remove();
+                Container = null!;
+            }
         }
 
         private void OnSlotChanged(PlayerSlotUI slot)

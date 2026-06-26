@@ -66,7 +66,9 @@ namespace DeadCellsMultiplayerX.Client.UI
         Default_Left,
         Default_Rigth,
         Tab_Exchange_Q,
-        Tab_Exchange_E
+        Tab_Exchange_E,
+        Confirm,
+        Cancel
     }
 
 

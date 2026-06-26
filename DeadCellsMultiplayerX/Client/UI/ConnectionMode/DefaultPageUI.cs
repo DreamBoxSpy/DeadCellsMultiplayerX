@@ -6,6 +6,7 @@ using DeadCellsMultiplayerX.Server.Events;
 using HaxeProxy.Runtime;
 using ModCore.Events.Interfaces.Game;
 using ModCore.Utilities;
+using Newtonsoft.Json;
 using SDL2;
 
 namespace DeadCellsMultiplayerX.Client.UI.Modes
@@ -31,7 +32,7 @@ namespace DeadCellsMultiplayerX.Client.UI.Modes
         public override void OnHost(Action onend) => StartConnect(true, onend);
         public override void OnClient(Action canEnter) => StartConnect(false, null, canEnter);
 
-        public override void OnHostLeave() => Manager.client.CurrentHostClient?.Dispose();
+        public override void OnHostLeave() { Manager.client.CurrentHostClient?.Dispose(); Manager.client.CurrentGuestClient?.Quit(); }
         public override void OnClientLeave() => Manager.client.CurrentGuestClient?.Quit();
 
         /// <summary>
@@ -54,6 +55,40 @@ namespace DeadCellsMultiplayerX.Client.UI.Modes
                         latency <= 100 ? "FFFF00" : "FF0000";
                 string text = $"ip:{this.ip}:{this.port} 当前人数:{Manager.GetPlayerCount()} 服务端延迟:<font color=\"#{hex}\">{latency}ms</font>";
                 Manager.playerPanel.titletext.set_text(text.AsHaxeString());
+            }
+
+
+            if (Manager?.playerPanel != null && !Manager.isHost)
+            {
+                bool disconnected = false;
+                string reason = "";
+
+                if (Manager.client == null)
+                {
+                    reason = "客户端未连接";
+                    disconnected = true;
+                }
+                else if (Manager.client.CurrentGuestClient == null)
+                {
+                    reason = "尚未加入房间";
+                    disconnected = true;
+                }
+                else if (Manager.client.CurrentGuestClient.IsDisposed)
+                {
+                    reason = "房主已断开连接";
+                    disconnected = true;
+                }
+                else if (Manager.client.CurrentGuestClient.LobbyInfo == null)
+                {
+                    reason = "房间信息丢失";
+                    disconnected = true;
+                }
+
+                if (disconnected)
+                {
+                    Manager.Return();
+                    ShowError(() => { }, reason);
+                }
             }
 
             //房主开始游戏时,进入黑屏
@@ -99,17 +134,19 @@ namespace DeadCellsMultiplayerX.Client.UI.Modes
 
         private void StartConnect(bool asHost, Action? onEnd = null, Action? canEnter = null)
         {
+            Manager.lockInter = true;
             string defaultIp = "";
 #if DEBUG
             defaultIp = "127.0.0.1:12345";
 #endif
-            new TextInput(
+            var input = new TextInput(
                 Manager,
                 "输入ip及端口".AsHaxeString(),
                 "test".AsHaxeString(),
                 defaultIp.AsHaxeString(),
                 (str) =>
                 {
+                    
                     if (!TryParseIpPort(str.ToString(), out var ip, out var port))
                     {
                         ShowError(asHost ? () => OnHost(onEnd!) : () => OnClient(canEnter!));
@@ -173,7 +210,12 @@ namespace DeadCellsMultiplayerX.Client.UI.Modes
                     {
                         Manager.LoaddingOut();
                     }, 3000);
-                }, null, null, null);
+                }, "回车确认".AsHaxeString(), null, null);
+
+            input.onDisposeCb = () =>
+            {
+                Manager.lockInter = false;
+            };
         }
 
 
@@ -226,6 +268,7 @@ namespace DeadCellsMultiplayerX.Client.UI.Modes
         private void ShowJoinConfirm(string ip, int port)
         {
             isJoining = true;
+            Manager.lockInter = true;
             new Confirmation(
                 Manager,
                 $"检测到邀请：{ip}:{port}\n是否加入？".AsHaxeString(),
@@ -264,10 +307,12 @@ namespace DeadCellsMultiplayerX.Client.UI.Modes
 
                         Manager.OpenPanel(false);
                         Manager.AddClientButtons();
+                        Manager.onResize();
+
                     });
                     Manager.delayer.addMs(null, () => Manager.LoaddingOut(), 3000);
                 },
-                () => isJoining = false,
+                () => { isJoining = false; Manager.lockInter = false; },
                 "加入".AsHaxeString(),
                 "取消".AsHaxeString(),
                 null
@@ -282,6 +327,7 @@ namespace DeadCellsMultiplayerX.Client.UI.Modes
         private void ShowError(HlAction retry, string text = "请输入正确IP及端口")
         {
             logger.Error(text);
+            Manager.LoaddingOut();
             var pop = new ModalPopUp(Ref<bool>.In(false), null);
             pop.text(text.AsHaxeString(), null, default);
             pop.onClose = retry;
