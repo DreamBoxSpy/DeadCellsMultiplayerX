@@ -1,7 +1,10 @@
 ﻿using dc;
 using dc.libs.heaps.slib;
+using dc.libs.heaps.slib._AnimManager;
 using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Utils;
+using Hashlink.Virtuals;
+using HaxeProxy.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -18,7 +21,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
 
         private SpriteInfo GetSpriteInfo(HSprite spr)
         {
-            if(!spritesInfo.TryGetValue(spr.HashlinkPointer, out var result))
+            if (!spritesInfo.TryGetValue(spr.HashlinkPointer, out var result))
             {
                 result = new();
                 spritesInfo.Add(spr.HashlinkPointer, result);
@@ -54,16 +57,17 @@ namespace DeadCellsMultiplayerX.Server.Connection
                 inf.Frame = spr.frame;
             }
 
-            inf.PivotData.Serialize(spr.pivot, typeof(SpritePivot));
+
+            inf.PivotData.Serialize(spr?.pivot, typeof(SpritePivot));
             inf.Parent = parent;
 
-            var children = spr.children;
+            var children = spr?.children;
 
             inf.Children.Clear();
-            for(int i = 0; i < children.length; i++)
+            for (int i = 0; i < children?.length; i++)
             {
                 var child = children.getDyn(i) as HSprite;
-                if(child == null)
+                if (child == null)
                 {
                     continue;
                 }
@@ -74,6 +78,46 @@ namespace DeadCellsMultiplayerX.Server.Connection
             }
         }
 
+        public void FillEntityAnimInfo(EntityInfo inf, HSprite spr)
+        {
+            var anim = spr.get_anim();
+            if (spr != null && anim != null && !anim.destroyed && anim.stack.length > 0)
+            {
+                var current = anim.stack.getDyn(0) as AnimInstance;
+
+                if (current != null)
+                {
+                    AnimInfo info = new AnimInfo
+                    {
+                        GroupName = current.group.ToString(),
+                        cursor = current.animCursor,
+                        speed = current.speed,
+                        paused = current.paused,
+                        Frame = spr.frame,
+                        plays = current.plays
+                    };
+                    inf.animInfo = info;
+                }
+            }
+        }
+
+        public void FillEntityGlowkeyData(Entity e, EntityInfo info)
+        {
+            var glow = (dc.shader.GlowKey)e.spr.getShader(dc.shader.GlowKey.Class);
+            if (glow != null && info.GlowData.Count == 0)
+            {
+                var array = glow.getGlowDatas();
+                for (int i = 0; i < array.length; i++)
+                {
+                    var data = array.getDyn(i);
+                    var virtuals = ((HaxeProxyBase)data).ToVirtual<virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_>();
+                    var Serialize = new SimpleObjData();
+                    Serialize.Serialize(virtuals, typeof(virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_));
+                    info.GlowData.Add(i, Serialize);
+                }
+            }
+        }
+
         private void FillEntityInfo(Entity e, EntityInfo inf)
         {
             inf.TypeName = e.GetType().FullName;
@@ -81,11 +125,13 @@ namespace DeadCellsMultiplayerX.Server.Connection
             inf.SubLevelId = e._level.GetSubLevelIndex();
             inf.EntityData.Serialize(e, typeof(Entity));
 
-            if(e.spr != null)
+            if (e.spr != null)
             {
                 var sinfo = GetSpriteInfo(e.spr);
                 inf.MainSprite = sinfo;
                 FillSpriteInfo(e.spr, inf.GUID, sinfo);
+                FillEntityAnimInfo(inf, e.spr);
+                FillEntityGlowkeyData(e, inf);
             }
         }
 

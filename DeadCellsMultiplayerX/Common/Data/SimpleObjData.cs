@@ -27,10 +27,10 @@ namespace DeadCellsMultiplayerX.Common.Data
 
         public void Serialize(object? obj, System.Type? type)
         {
-            
+
             IntValues.Clear();
             DoubleValues.Clear();
-            BoolValues.Clear(); 
+            BoolValues.Clear();
 
             if (obj == null)
             {
@@ -40,7 +40,17 @@ namespace DeadCellsMultiplayerX.Common.Data
             var fields = GetFields(type ?? obj.GetType());
             foreach (var v in fields)
             {
-                var val = v.Field.GetValue(obj);
+                if (v.Field == null) continue;
+
+                object? val;
+                try
+                {
+                    val = v.Field.GetValue(obj);
+                }
+                catch
+                {
+                    continue;
+                }
 
                 if (val == null)
                 {
@@ -59,7 +69,7 @@ namespace DeadCellsMultiplayerX.Common.Data
                 {
                     DoubleValues[v.Name] = (double)val;
                 }
-                else if(v.Kind == SFieldKind.String)
+                else if (v.Kind == SFieldKind.String)
                 {
                     StringValues[v.Name] = (string)val;
                 }
@@ -68,16 +78,16 @@ namespace DeadCellsMultiplayerX.Common.Data
 
         private static T? GetValue<T>(Dictionary<string, T> dict, string name) where T : struct
         {
-            if(dict.TryGetValue(name, out var val))
+            if (dict.TryGetValue(name, out var val))
             {
                 return val;
             }
             return default;
         }
 
-        public void Deserialize(object? obj, System.Type? type )
+        public void Deserialize(object? obj, System.Type? type)
         {
-            if(obj == null)
+            if (obj == null)
             {
                 return;
             }
@@ -98,7 +108,7 @@ namespace DeadCellsMultiplayerX.Common.Data
                 {
                     val = GetValue(DoubleValues, v.Name);
                 }
-                else if(v.Kind == SFieldKind.String)
+                else if (v.Kind == SFieldKind.String)
                 {
                     val = StringValues.TryGetValue(v.Name, out var stringVal) ? stringVal : null;
                 }
@@ -113,7 +123,7 @@ namespace DeadCellsMultiplayerX.Common.Data
 
         private static List<SFieldInfo> GetFields(System.Type type)
         {
-            if(!types.TryGetValue(type, out var fields))
+            if (!types.TryGetValue(type, out var fields))
             {
                 fields = [];
                 var fs = type.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public);

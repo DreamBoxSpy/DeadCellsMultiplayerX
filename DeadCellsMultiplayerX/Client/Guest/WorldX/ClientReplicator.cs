@@ -1,3 +1,5 @@
+using dc;
+using dc.h2d;
 using dc.libs.heaps.slib;
 using dc.pr;
 using DeadCellsMultiplayerX.Client.Guest;
@@ -5,6 +7,8 @@ using DeadCellsMultiplayerX.Common;
 using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Server;
 using DeadCellsMultiplayerX.Utils;
+using Hashlink.Virtuals;
+using HaxeProxy.Runtime;
 using Microsoft.VisualStudio.Threading;
 using ModCore.Utilities;
 using System;
@@ -17,6 +21,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         private readonly GuestClientSession session;
         private readonly Dictionary<string, Ghost> ghosts = [];
         private readonly Dictionary<string, SpriteLib> spriteLibs = [];
+        private readonly Dictionary<string, HSprite> spriteCache = [];
 
         public ClientReplicator(GuestClientSession session)
         {
@@ -31,9 +36,10 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         protected override void MyDispose()
         {
             foreach (var g in ghosts.Values)
-                g.Dispose();
+                g.destroy();
             ghosts.Clear();
             spriteLibs.Clear();
+            spriteCache.Clear();
         }
 
 
@@ -41,8 +47,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         {
             if (!spriteLibs.TryGetValue(atlasPath, out var lib))
             {
-                lib = dc.libs.heaps.slib.assets.Atlas.Class.load(
-                    atlasPath.AsHaxeString(), null, null, null);
+                lib = Assets.Class.lib.get(atlasPath.AsHaxeString());
                 spriteLibs.Add(atlasPath, lib);
             }
             return lib;
@@ -122,7 +127,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         public void ApplyAreaInfo(List<EntityInfo> entities, Level lvl)
         {
             foreach (var g in ghosts.Values)
-                g.SetVisible(false);
+                g.visible = false;
 
             foreach (var info in entities)
                 ApplyEntityInfo(info, lvl);
@@ -135,10 +140,11 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             if (!ghosts.TryGetValue(info.GUID, out var ghost))
             {
                 ghost = new EntityGhost(lvl, info.GUID);
+                ghost.init(info, this);
                 ghosts.Add(info.GUID, ghost);
             }
 
-            ghost.SetVisible(true);
+            ghost.visible = true;
             ghost.ApplyUpdate(info);
         }
 

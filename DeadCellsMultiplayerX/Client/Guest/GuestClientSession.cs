@@ -4,6 +4,7 @@ using dc.en.inter;
 using dc.pr;
 using dc.tool;
 using DeadCellsMultiplayerX.Client.Guest.Ghost;
+using DeadCellsMultiplayerX.Client.Guest.WorldX;
 using DeadCellsMultiplayerX.Client.Host;
 using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Server;
@@ -35,7 +36,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
         private IServerRPC server = null!;
         private bool isOwner = false;
         private byte[]? saveData;
-        private WorldDirector? worldDirector;
+        private ClientReplicator? replicator;
         private Task? syncTimeStampTask;
         private readonly List<HashlinkHooks.HookHandle> hooks = [];
 
@@ -176,7 +177,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
             base.MyDispose();
 
             serverStream?.Dispose();
-            worldDirector?.Dispose();
+            replicator?.Dispose();
             rpc?.Dispose();
 
             Hook__Save.save -= Hook__Save_save;
@@ -242,9 +243,9 @@ namespace DeadCellsMultiplayerX.Client.Guest
                 }
             }
 
-            worldDirector?.Dispose();
-            worldDirector = new(this);
-            await worldDirector.Init();
+            replicator?.Dispose();
+            replicator = new(this);
+            replicator.Start();
         }
 
         private void UpdateTimeStamp()
@@ -297,7 +298,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
 
         public void UpdateEntity(EntityInfo info)
         {
-            worldDirector?.UpdateEntity(info, null);
+            replicator?.ApplyEntityInfo(info, null);
         }
     }
 }

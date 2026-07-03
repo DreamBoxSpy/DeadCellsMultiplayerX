@@ -103,8 +103,8 @@ namespace DeadCellsMultiplayerX.Server
             }
 
             Hook_Entity._isOnScreen += Hook_Entity__isOnScreen;
-            Hook_Entity.setGlowColor += Hook_Entity_setGlowColor;
-            Hook_Entity.setGlowData += Hook_Entity_setGlowData;
+            // Hook_Entity.setGlowColor += Hook_Entity_setGlowColor;
+            // Hook_Entity.setGlowData += Hook_Entity_setGlowData;
             Hook_Entity.dispose += Hook_Entity_dispose;
         }
 

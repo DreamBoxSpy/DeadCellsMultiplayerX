@@ -13,17 +13,8 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         public PlayerGhost(Level lvl, string guid) : base(lvl, guid) { }
 
-        public override void SetVisible(bool visible) => this.visible = visible;
-
-        public override void Dispose()
-        {
-            spr?.remove();
-            destroy();
-        }
-
         protected override void OnApplyUpdate(EntityInfo info, bool firstTime)
         {
-
         }
     }
 }

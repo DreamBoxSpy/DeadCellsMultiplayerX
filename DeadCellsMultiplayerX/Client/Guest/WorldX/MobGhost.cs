@@ -1,14 +1,12 @@
 using dc;
 using dc.pr;
 using DeadCellsMultiplayerX.Common.Data;
-using Hashlink.Virtuals;
-using ModCore.Utilities;
 
 namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 {
-    public class EntityGhost : Ghost
+    public class MobGhost : Ghost
     {
-        public EntityGhost(Level lvl, string guid) : base(lvl, guid) { }
+        public MobGhost(Level lvl, string guid) : base(lvl, guid) { }
 
         protected override void OnApplyUpdate(EntityInfo info, bool firstTime)
         {
@@ -16,3 +14,4 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         }
     }
 }
+

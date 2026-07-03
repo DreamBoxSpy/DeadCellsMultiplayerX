@@ -17,5 +17,6 @@ namespace DeadCellsMultiplayerX.Common.Data
         public SimpleObjData EntityData { get; set; } = new();
         public Dictionary<int, SimpleObjData> GlowData { get; set; } = [];
         public SpriteInfo? MainSprite { get; set; }
+        public AnimInfo animInfo { get; set; } = new();
     }
 }
