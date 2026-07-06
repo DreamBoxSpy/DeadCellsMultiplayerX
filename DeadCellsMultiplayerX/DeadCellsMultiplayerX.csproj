@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <PackageReference Include="DeadCellsCoreModding.MDK" Version="1.0.1" />
+    <PackageReference Include="MemoryPack" Version="1.21.4" />
     <PackageReference Include="Microsoft.Native.Quic.MsQuic.OpenSSL" Version="2.5.8" />
     <PackageReference Include="StbImageSharp" Version="2.30.15" />
     <PackageReference Include="Steamworks.NET" Version="20.2.0" />
@@ -67,6 +68,7 @@
     <Copy SourceFiles="$(OutputPath)/Microsoft.VisualStudio.Threading.dll" DestinationFolder="libs\StreamJsonRpc\" />
     <Copy SourceFiles="$(OutputPath)/Microsoft.VisualStudio.Validation.dll" DestinationFolder="libs\StreamJsonRpc\" />
     <Copy SourceFiles="$(OutputPath)/StbImageSharp.dll" DestinationFolder="libs\StbImageSharp\" />
+    <Copy SourceFiles="$(OutputPath)/MemoryPack.Core.dll" DestinationFolder="libs\MemoryPack\"/>
     <ItemGroup>
       <OutputFiles Include="libs\**\*.dll" />
     </ItemGroup>
