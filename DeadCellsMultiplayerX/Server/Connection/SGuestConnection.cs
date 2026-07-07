@@ -32,7 +32,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
         IOnEntitySetGlowData,
         IOnEntityDisposed
     {
-        
+
 
         private IServerRPC.AreaInfoRequest? lastRequest;
 
@@ -103,11 +103,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
         void IOnEntitySetGlowData.OnEntitySetGlowData(IOnEntitySetGlowData.Data data)
         {
             var info = GetEntityInfo(data.Entity);
-
-            var gd = new virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_();
-            var gdd = new SimpleObjData();
-            gdd.Serialize(gd, null);
-            info.GlowData[data.Index] = gdd;
+            info.GlowData[data.Index] = new byte[1024];
         }
 
         void IOnEntityDisposed.OnEntityDisposed(Entity e)

@@ -2,9 +2,11 @@
 using dc.libs.heaps.slib;
 using dc.libs.heaps.slib._AnimManager;
 using DeadCellsMultiplayerX.Common.Data;
+using DeadCellsMultiplayerX.Common.Serializers;
 using DeadCellsMultiplayerX.Utils;
 using Hashlink.Virtuals;
 using HaxeProxy.Runtime;
+using MessagePack.Formatters;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -109,11 +111,10 @@ namespace DeadCellsMultiplayerX.Server.Connection
                 var array = glow.getGlowDatas();
                 for (int i = 0; i < array.length; i++)
                 {
+                    
                     var data = array.getDyn(i);
                     var virtuals = ((HaxeProxyBase)data).ToVirtual<virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_>();
-                    var Serialize = new SimpleObjData();
-                    Serialize.Serialize(virtuals, typeof(virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_));
-                    info.GlowData.Add(i, Serialize);
+                    info.GlowData.Add(i, DCMXSerializers.MessagePack.Serialize(virtuals));
                 }
             }
         }

@@ -11,7 +11,15 @@ namespace DeadCellsMultiplayerX.Common.Serializers
 
         private static readonly MessagePackSerializerOptions Options =
             MessagePackSerializerOptions.Standard
-                .WithResolver(ContractlessStandardResolver.Instance);
+                .WithResolver(
+                    CompositeResolver.Create(
+                        [],
+                        [
+                            HaxeFallbackResolver.Instance,
+                            ContractlessStandardResolver.Instance,
+                        ]
+                    )
+                );
 
         private MessagePackSerializerImpl() { }
         public byte[] Serialize<T>(T? obj)

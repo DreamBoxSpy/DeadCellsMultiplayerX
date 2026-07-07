@@ -15,7 +15,7 @@ namespace DeadCellsMultiplayerX.Common.Data
         public string? ColorMapSkin { get; set; }
         public int SubLevelId { get; set; }
         public SimpleObjData EntityData { get; set; } = new();
-        public Dictionary<int, SimpleObjData> GlowData { get; set; } = [];
+        public Dictionary<int, byte[]> GlowData { get; set; } = [];
         public SpriteInfo? MainSprite { get; set; }
         public AnimInfo animInfo { get; set; } = new();
     }

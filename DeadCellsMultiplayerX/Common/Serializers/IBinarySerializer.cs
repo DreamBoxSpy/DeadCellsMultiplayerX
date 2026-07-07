@@ -14,7 +14,7 @@ namespace DeadCellsMultiplayerX.Common.Serializers
 
         T? Deserialize<T>(ReadOnlySpan<byte> data);
 
-        
+
 
         object? Deserialize(ReadOnlySpan<byte> data, Type type);
 
@@ -36,7 +36,7 @@ namespace DeadCellsMultiplayerX.Common.Serializers
             => Deserialize((ReadOnlySpan<byte>)data, type);
     }
 
-    public static class Serializers
+    public static class DCMXSerializers
     {
         public static IBinarySerializer MemoryPack { get; }
             = MemoryPackSerializerImpl.Instance;
