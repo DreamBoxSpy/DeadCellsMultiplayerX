@@ -8,12 +8,8 @@ using HaxeProxy.Runtime;
 using ModCore.Utilities;
 using DeadCellsMultiplayerX.Common.Data;
 using dc.libs.heaps.slib._AnimManager;
-using dc.h3d.shader;
-using dc.hxd;
-using dc.hxd.res;
-using Serilog.Core;
-using Serilog;
 using DeadCellsMultiplayerX.Common.Serializers;
+using dc.shader;
 
 namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 {
@@ -62,13 +58,19 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             base.initGfx();
             if (info != null && info.MainSprite != null)
             {
-                initSprite(client.GetSpriteLib(info.MainSprite.AtlasName), info.MainSprite.GroupName.AsHaxeString(), null, null, null, null, null, null);
+                var sprlib = client.GetSpriteLib(info.MainSprite.AtlasName);
+                var group = info.MainSprite.GroupName.AsHaxeString();
+                dc.h3d.mat.Texture normalMapFromGroup = sprlib.getNormalMapFromGroup(group);
+                initSprite(sprlib, group, null, null, null, true, null, normalMapFromGroup);
+                
+
                 info.MainSprite.PivotData.Deserialize(spr.pivot, typeof(SpritePivot));
 
                 lastColorMapModel = info.ColorMapModel;
                 lastColorMapSkin = info.ColorMapSkin;
                 setColorMap(lastColorMapModel?.AsHaxeString(),
                  lastColorMapSkin?.AsHaxeString(), null);
+
 
                 if (info.GlowData != null)
                 {

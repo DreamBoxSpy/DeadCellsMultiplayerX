@@ -102,8 +102,8 @@ namespace DeadCellsMultiplayerX.Server.Connection
 
         void IOnEntitySetGlowData.OnEntitySetGlowData(IOnEntitySetGlowData.Data data)
         {
-            var info = GetEntityInfo(data.Entity);
-            info.GlowData[data.Index] = new byte[1024];
+            // var info = GetEntityInfo(data.Entity);
+            // info.GlowData[data.Index] = new byte[1024];
         }
 
         void IOnEntityDisposed.OnEntityDisposed(Entity e)

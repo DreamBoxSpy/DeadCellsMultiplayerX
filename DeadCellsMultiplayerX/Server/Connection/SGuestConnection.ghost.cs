@@ -106,12 +106,11 @@ namespace DeadCellsMultiplayerX.Server.Connection
         public void FillEntityGlowkeyData(Entity e, EntityInfo info)
         {
             var glow = (dc.shader.GlowKey)e.spr.getShader(dc.shader.GlowKey.Class);
-            if (glow != null && info.GlowData.Count == 0)
+            if (info.GlowData.Count == 0 && glow != null)
             {
                 var array = glow.getGlowDatas();
                 for (int i = 0; i < array.length; i++)
                 {
-                    
                     var data = array.getDyn(i);
                     var virtuals = ((HaxeProxyBase)data).ToVirtual<virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_>();
                     info.GlowData.Add(i, DCMXSerializers.MessagePack.Serialize(virtuals));

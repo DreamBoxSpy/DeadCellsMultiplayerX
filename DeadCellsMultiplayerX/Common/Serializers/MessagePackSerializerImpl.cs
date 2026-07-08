@@ -1,4 +1,5 @@
 using System.Buffers;
+using DeadCellsMultiplayerX.Common.Serializers.Data;
 using MessagePack;
 using MessagePack.Resolvers;
 
@@ -13,10 +14,13 @@ namespace DeadCellsMultiplayerX.Common.Serializers
             MessagePackSerializerOptions.Standard
                 .WithResolver(
                     CompositeResolver.Create(
-                        [],
                         [
-                            HaxeFallbackResolver.Instance,
+                            new H3DVectorFormatter(),
+                            new H3DTextureFormatter()
+                        ],
+                        [
                             ContractlessStandardResolver.Instance,
+                            HaxeFallbackResolver.Instance,
                         ]
                     )
                 );
