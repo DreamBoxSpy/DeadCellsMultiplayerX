@@ -10,6 +10,7 @@ using DeadCellsMultiplayerX.Common.Data;
 using dc.libs.heaps.slib._AnimManager;
 using DeadCellsMultiplayerX.Common.Serializers;
 using dc.shader;
+using System.Windows.Documents;
 
 namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 {
@@ -56,13 +57,29 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         internal void initGfx(EntityInfo info, ClientReplicator client)
         {
             base.initGfx();
+            
             if (info != null && info.MainSprite != null)
             {
                 var sprlib = client.GetSpriteLib(info.MainSprite.AtlasName);
                 var group = info.MainSprite.GroupName.AsHaxeString();
                 dc.h3d.mat.Texture normalMapFromGroup = sprlib.getNormalMapFromGroup(group);
                 initSprite(sprlib, group, null, null, null, true, null, normalMapFromGroup);
-                
+
+                foreach (AnimTransitions data in info.animInfo.AnimTransitions)
+                {
+                    dc.String? anim = null;
+                    dc.String? to = null;
+                    dc.String? from = null;
+
+                    if (data.From != string.Empty)
+                        from = data.From!.AsHaxeString();
+                    if (data.Anim != string.Empty)
+                        anim = data.Anim!.AsHaxeString();
+                    if (data.To != string.Empty)
+                        to = data.To!.AsHaxeString();
+
+                    spr.get_anim().registerTransition(from, to, anim, data.speed, data.reverse, null);
+                }
 
                 info.MainSprite.PivotData.Deserialize(spr.pivot, typeof(SpritePivot));
 

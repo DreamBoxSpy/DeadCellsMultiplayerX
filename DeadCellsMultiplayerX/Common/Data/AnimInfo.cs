@@ -14,5 +14,6 @@ namespace DeadCellsMultiplayerX.Common.Data
         public string GroupName { get; set; } = ""; //动画名
         public int Frame { get; set; } //帧索引
         public int plays { get; set; }
+        public List<AnimTransitions> AnimTransitions { get; set; } = new();
     }
 }

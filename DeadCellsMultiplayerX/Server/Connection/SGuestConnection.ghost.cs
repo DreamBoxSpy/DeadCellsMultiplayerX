@@ -7,6 +7,7 @@ using DeadCellsMultiplayerX.Utils;
 using Hashlink.Virtuals;
 using HaxeProxy.Runtime;
 using MessagePack.Formatters;
+using ModCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -86,7 +87,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
             if (spr != null && anim != null && !anim.destroyed && anim.stack.length > 0)
             {
                 var current = anim.stack.getDyn(0) as AnimInstance;
-
+                var transitions = anim.transitions;
                 if (current != null)
                 {
                     AnimInfo info = new AnimInfo
@@ -98,6 +99,23 @@ namespace DeadCellsMultiplayerX.Server.Connection
                         Frame = spr.frame,
                         plays = current.plays
                     };
+
+                    if (inf.animInfo.AnimTransitions.Count == 0 && transitions.length > 0)
+                    {
+                        List<AnimTransitions> anims = [];
+                        foreach (Transition data in transitions)
+                        {
+                            var tr = new AnimTransitions();
+                            tr.Anim = data.anim.ToString();
+                            tr.From = data.from.ToString();
+                            tr.To = data.to.ToString();
+                            tr.reverse = data.reverse;
+                            tr.speed = data.spd;
+
+                            anims.Add(tr);
+                        }
+                        inf.animInfo.AnimTransitions = anims;
+                    }
                     inf.animInfo = info;
                 }
             }
