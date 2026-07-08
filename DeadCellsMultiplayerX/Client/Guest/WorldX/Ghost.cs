@@ -27,6 +27,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         private string? lastColorMapModel;
         private string? lastColorMapSkin;
         private string lastGroup = "";
+        private const int TweenDurationMs = 50;
 
         private Tween? tweenX;
         private Tween? tweenY;
@@ -43,9 +44,10 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             setPosCase(tcx, tcy, txr, tyr);
         }
 
-        private void EnsurePositionTweenX(double target, int durationMs)
+        private void EnsurePositionTweenX(double target)
         {
-            double speed = 1.0 / (durationMs * tw.baseFps / 1000.0);
+            double speed = 1.0 / (TweenDurationMs * tw.baseFps / 1000.0);
+
             if (tweenX != null && !tweenX.done)
             {
                 tweenX.from = tweenCurX;
@@ -59,15 +61,16 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                     getter: () => tweenCurX,
                     setter: (val) => { tweenCurX = val; ApplyTweenedPos(); },
                     from: tweenCurX, to: target,
-                    tp: new TType.TLinear(), duration_ms: durationMs,
+                    tp: new TType.TLinear(), duration_ms: TweenDurationMs,
                     allowDuplicates: Ref<bool>.In(true)
                 );
             }
         }
 
-        private void EnsurePositionTweenY(double target, int durationMs)
+        private void EnsurePositionTweenY(double target)
         {
-            double speed = 1.0 / (durationMs * tw.baseFps / 1000.0);
+            double speed = 1.0 / (TweenDurationMs * tw.baseFps / 1000.0);
+
             if (tweenY != null && !tweenY.done)
             {
                 tweenY.from = tweenCurY;
@@ -81,7 +84,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                     getter: () => tweenCurY,
                     setter: (val) => { tweenCurY = val; ApplyTweenedPos(); },
                     from: tweenCurY, to: target,
-                    tp: new TType.TLinear(), duration_ms: durationMs,
+                    tp: new TType.TLinear(), duration_ms: TweenDurationMs,
                     allowDuplicates: Ref<bool>.In(true)
                 );
             }
@@ -169,8 +172,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
             if (spr == null) return;
 
-            //CurrentState.EntityData.Deserialize(this, typeof(Entity));
-
             var pos = CurrentState.PosVector;
             targetX = pos.X * 24.0 + pos.Z * 24.0;
             targetY = pos.Y * 24.0 + pos.W * 24.0;
@@ -182,15 +183,8 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                 tweenCurY = targetY;
             }
 
-            int durationMs = 50;
-            if (!firstTime)
-            {
-                long interval = CurrentState.TimeStamp - PrevState!.TimeStamp;
-                durationMs = (int)System.Math.Clamp(interval, 20, 120);
-            }
-
-            EnsurePositionTweenX(targetX, durationMs);
-            EnsurePositionTweenY(targetY, durationMs);
+            EnsurePositionTweenX(targetX);
+            EnsurePositionTweenY(targetY);
 
             DisableGameplay();
             UpdateAnim(CurrentState);
@@ -199,16 +193,11 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             SyncFacing(incoming);
         }
 
-        /// <summary>
-        /// 方向
-        /// </summary>
-        /// <param name="info"></param>
         private void SyncFacing(EntityInfo info)
         {
             if (info.EntityData.IntValues.TryGetValue("dir", out var fr))
                 dir = fr;
         }
-
 
         public void UpdateAnim(EntityInfo info)
         {
