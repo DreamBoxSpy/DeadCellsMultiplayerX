@@ -49,6 +49,13 @@ namespace DeadCellsMultiplayerX.Client.Guest
         /// </summary>
         public long CurrentTimeStamp { get; private set; }
 
+        /// <summary>
+        /// 供 Ghost.postUpdate() 等渲染代码读取的同步服务器时间。
+        /// 由 <see cref="IOnFrameUpdate.OnFrameUpdate"/> 在每帧开始时写入。
+        /// 在主线程上运行，无需同步。
+        /// </summary>
+        public static long SyncedTimeMs { get; private set; }
+
         public IServerRPC Server => server ?? throw new InvalidOperationException();
 
         public dc.pr.Game Game => dc.pr.Game.Class.ME;
@@ -292,8 +299,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
 
             // 同步 TimeStamp
             UpdateTimeStamp();
-
-            
+            SyncedTimeMs = CurrentTimeStamp;
         }
 
         public void UpdateEntity(EntityInfo info)

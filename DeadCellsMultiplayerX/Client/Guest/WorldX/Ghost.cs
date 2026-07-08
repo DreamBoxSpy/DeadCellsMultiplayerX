@@ -1,16 +1,17 @@
 using dc;
 using dc.libs;
 using dc.libs.heaps.slib;
+using dc.libs.heaps.slib._AnimManager;
 using dc.libs.misc;
 using dc.pr;
 using Hashlink.Virtuals;
 using HaxeProxy.Runtime;
 using ModCore.Utilities;
 using DeadCellsMultiplayerX.Common.Data;
-using dc.libs.heaps.slib._AnimManager;
 using DeadCellsMultiplayerX.Common.Serializers;
 using dc.shader;
 using System.Windows.Documents;
+using System.Numerics;
 
 namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 {
@@ -18,14 +19,73 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
     {
         public string GUID { get; }
 
-        public EntityInfo? PrevState { get; private set; } //上一个状态
-        public EntityInfo? CurrentState { get; private set; } //当前状态
+        public EntityInfo? PrevState { get; private set; }
+        public EntityInfo? CurrentState { get; private set; }
 
-        public bool IsFirstUpdate => PrevState == null; //首次更新
+        public bool IsFirstUpdate => PrevState == null;
 
-        private string? lastColorMapModel;  //当前皮肤色带图
-        private string? lastColorMapSkin;   //当前皮肤模型
-        private string lastGroup = "";  //当前播放的hero动画
+        private string? lastColorMapModel;
+        private string? lastColorMapSkin;
+        private string lastGroup = "";
+
+        private Tween? tweenX;
+        private Tween? tweenY;
+        private double tweenCurX, tweenCurY;
+        private double targetX, targetY;
+
+        private void ApplyTweenedPos()
+        {
+            const double TILE = 24.0;
+            int tcx = (int)(tweenCurX / TILE);
+            int tcy = (int)(tweenCurY / TILE);
+            double txr = (tweenCurX - tcx * TILE) / TILE;
+            double tyr = (tweenCurY - tcy * TILE) / TILE;
+            setPosCase(tcx, tcy, txr, tyr);
+        }
+
+        private void EnsurePositionTweenX(double target, int durationMs)
+        {
+            double speed = 1.0 / (durationMs * tw.baseFps / 1000.0);
+            if (tweenX != null && !tweenX.done)
+            {
+                tweenX.from = tweenCurX;
+                tweenX.to = target;
+                tweenX.ln = 0.0;
+                tweenX.speed = speed;
+            }
+            else
+            {
+                tweenX = tw.create_(
+                    getter: () => tweenCurX,
+                    setter: (val) => { tweenCurX = val; ApplyTweenedPos(); },
+                    from: tweenCurX, to: target,
+                    tp: new TType.TLinear(), duration_ms: durationMs,
+                    allowDuplicates: Ref<bool>.In(true)
+                );
+            }
+        }
+
+        private void EnsurePositionTweenY(double target, int durationMs)
+        {
+            double speed = 1.0 / (durationMs * tw.baseFps / 1000.0);
+            if (tweenY != null && !tweenY.done)
+            {
+                tweenY.from = tweenCurY;
+                tweenY.to = target;
+                tweenY.ln = 0.0;
+                tweenY.speed = speed;
+            }
+            else
+            {
+                tweenY = tw.create_(
+                    getter: () => tweenCurY,
+                    setter: (val) => { tweenCurY = val; ApplyTweenedPos(); },
+                    from: tweenCurY, to: target,
+                    tp: new TType.TLinear(), duration_ms: durationMs,
+                    allowDuplicates: Ref<bool>.In(true)
+                );
+            }
+        }
 
         protected abstract void OnApplyUpdate(EntityInfo incoming, bool firstTime);
 
@@ -57,7 +117,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         internal void initGfx(EntityInfo info, ClientReplicator client)
         {
             base.initGfx();
-            
+
             if (info != null && info.MainSprite != null)
             {
                 var sprlib = client.GetSpriteLib(info.MainSprite.AtlasName);
@@ -108,9 +168,29 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
             if (spr == null) return;
 
-            CurrentState.EntityData.Deserialize(this, typeof(Entity));
+            //CurrentState.EntityData.Deserialize(this, typeof(Entity));
 
-            setPosCase(cx, cy, xr, yr);
+            var pos = CurrentState.PosVector;
+            targetX = pos.X * 24.0 + pos.Z * 24.0;
+            targetY = pos.Y * 24.0 + pos.W * 24.0;
+
+            if (firstTime)
+            {
+                setPosCase(pos.X, pos.Y, pos.Z, pos.W);
+                tweenCurX = targetX;
+                tweenCurY = targetY;
+            }
+
+            int durationMs = 50;
+            if (!firstTime)
+            {
+                long interval = CurrentState.TimeStamp - PrevState!.TimeStamp;
+                durationMs = (int)System.Math.Clamp(interval, 20, 120);
+            }
+
+            EnsurePositionTweenX(targetX, durationMs);
+            EnsurePositionTweenY(targetY, durationMs);
+
             DisableGameplay();
             UpdateAnim(CurrentState);
 
@@ -118,14 +198,13 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             SyncFacing(incoming);
         }
 
-
         /// <summary>
         /// 方向
         /// </summary>
         /// <param name="info"></param>
         private void SyncFacing(EntityInfo info)
         {
-            if (info.EntityData.IntValues.TryGetValue("facingRight", out var fr) && fr != 0)
+            if (info.EntityData.IntValues.TryGetValue("dir", out var fr))
                 dir = fr;
         }
 
@@ -135,19 +214,19 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             var animinfo = info.animInfo;
             if (spr == null || info == null || info.MainSprite == null || animinfo == null) return;
             var anim = spr.get_anim();
+            var stack = anim.stack.getDyn(0) as AnimInstance;
             if (lastGroup != info.MainSprite.GroupName)
             {
                 lastGroup = info.MainSprite.GroupName;
-                var currloop = anim.play(info.MainSprite.GroupName.AsHaxeString(), animinfo.plays, null);
-                var stack = currloop.stack.getDyn(0) as AnimInstance;
-                if (stack != null)
-                {
-                    stack.speed = animinfo.speed;
-                    stack.plays = animinfo.plays;
-                }
+                anim.play(info.MainSprite.GroupName.AsHaxeString(), animinfo.plays, null).loop(null);
+            }
+
+            if (stack != null)
+            {
+                stack.speed = animinfo.speed;
+                stack.paused = animinfo.paused;
             }
         }
-
 
         protected void DisableGameplay()
         {

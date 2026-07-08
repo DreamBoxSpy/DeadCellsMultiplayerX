@@ -143,6 +143,11 @@ namespace DeadCellsMultiplayerX.Server.Connection
             inf.SubLevelId = e._level.GetSubLevelIndex();
             inf.EntityData.Serialize(e, typeof(Entity));
 
+            var pos = new PosVector4(e.cx, e.cy, e.xr, e.yr);
+            inf.PosVector = pos;
+
+            inf.TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
             if (e.spr != null)
             {
                 var sinfo = GetSpriteInfo(e.spr);
