@@ -103,6 +103,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             createAttackTarget();
             initGfx(info, client);
             DisableGameplay();
+            easeSpritePos = false;
             initClonesGfx();
             if (_level != null && _level.minimap != null && !_level.minimap.destroyed)
                 minimapTracking();
@@ -234,6 +235,8 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             circularRepel = 0;
             hasRepelling = false;
             detectsWater = false;
+            hasGravity = false;
+            gravity = 0;
         }
     }
 }
