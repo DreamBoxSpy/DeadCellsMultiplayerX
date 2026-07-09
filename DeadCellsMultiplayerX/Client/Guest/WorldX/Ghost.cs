@@ -208,13 +208,13 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             if (lastGroup != info.MainSprite.GroupName)
             {
                 lastGroup = info.MainSprite.GroupName;
-                anim.play(info.MainSprite.GroupName.AsHaxeString(), animinfo.plays, null).loop(null);
+                anim.play(info.MainSprite.GroupName.AsHaxeString(), animinfo.Plays, null).loop(null);
             }
 
             if (stack != null)
             {
-                stack.speed = animinfo.speed;
-                stack.paused = animinfo.paused;
+                stack.speed = animinfo.Speed;
+                stack.paused = animinfo.Paused;
             }
         }
 

@@ -1,4 +1,5 @@
 using dc;
+using dc.en;
 using dc.pr;
 using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Utils;
@@ -15,6 +16,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         protected override void OnApplyUpdate(EntityInfo info, bool firstTime)
         {
+            if (info.TypeName != typeof(Hero).GetType().FullName) return;
         }
     }
 }

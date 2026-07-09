@@ -57,9 +57,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
             {
                 inf.AtlasName = atlasPath;
                 inf.GroupName = spr.groupName.ToString();
-                inf.Frame = spr.frame;
             }
-
 
             inf.PivotData.Serialize(spr?.pivot, typeof(SpritePivot));
             inf.Parent = parent;
@@ -92,12 +90,10 @@ namespace DeadCellsMultiplayerX.Server.Connection
                 {
                     AnimInfo info = new AnimInfo
                     {
-                        GroupName = current.group.ToString(),
-                        cursor = current.animCursor,
-                        speed = current.speed,
-                        paused = current.paused,
+                        Speed = current.speed,
+                        Paused = current.paused,
                         Frame = spr.frame,
-                        plays = current.plays
+                        Plays = current.plays
                     };
 
                     if (inf.animInfo.AnimTransitions.Count == 0 && transitions.length > 0)
