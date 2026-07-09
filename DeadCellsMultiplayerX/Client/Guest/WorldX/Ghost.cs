@@ -173,12 +173,12 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             if (spr == null) return;
 
             var pos = CurrentState.PosVector;
-            targetX = pos.X * 24.0 + pos.Z * 24.0;
-            targetY = pos.Y * 24.0 + pos.W * 24.0;
+            targetX = pos.CX * 24.0 + pos.XR * 24.0;
+            targetY = pos.CY * 24.0 + pos.XY * 24.0;
 
             if (firstTime)
             {
-                setPosCase(pos.X, pos.Y, pos.Z, pos.W);
+                setPosCase(pos.CX, pos.CY, pos.XR, pos.XY);
                 tweenCurX = targetX;
                 tweenCurY = targetY;
             }
@@ -220,7 +220,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         protected void DisableGameplay()
         {
-            set_targetable(false);
+            //set_targetable(false);
             circularRepel = 0;
             hasRepelling = false;
             detectsWater = false;

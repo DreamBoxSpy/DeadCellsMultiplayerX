@@ -143,7 +143,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
             inf.SubLevelId = e._level.GetSubLevelIndex();
             inf.EntityData.Serialize(e, typeof(Entity));
 
-            var pos = new PosVector4(e.cx, e.cy, e.xr, e.yr);
+            var pos = new PosVector(e.cx, e.cy, e.xr, e.yr, e.dir);
             inf.PosVector = pos;
 
             inf.TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
