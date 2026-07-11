@@ -18,74 +18,133 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         public EntityInfo? PrevState { get; private set; }
         public EntityInfo? CurrentState { get; private set; }
-
         public bool IsFirstUpdate => PrevState == null;
 
         private string? lastColorMapModel;
         private string? lastColorMapSkin;
         private string lastGroup = "";
-        private const int TweenDurationMs = 50;
 
-        private Tween? tweenX;
-        private Tween? tweenY;
-        private double tweenCurX, tweenCurY;
-        private double targetX, targetY;
+        private Tween? posTween;
+        private double posFromX, posFromY;
+        private double posToX, posToY;
+        private double posCurX, posCurY;
+        private double posProgress;
+        private double smoothDurationMs = DefaultDurationMs;
+        private const double SmoothingFactor = 0.3;   // 新区间的EMA权重
+        private const int MinDurationMs = 20;
+        private const int MaxDurationMs = 120;
+        private const int DefaultDurationMs = 50;
+        private const double TilePx = 24.0;
 
-        private void ApplyTweenedPos()
+        /// <summary>
+        /// 在跳过插值前的最大像素距离
+        /// </summary>
+        protected virtual double TeleportThresholdPx => 300.0;
+
+        /// <summary>
+        /// 通过 setPosCase 将插值后的像素位置写入实体的
+        /// </summary>
+        private void CommitPosition(double pixelX, double pixelY)
         {
-            const double TILE = 24.0;
-            int tcx = (int)(tweenCurX / TILE);
-            int tcy = (int)(tweenCurY / TILE);
-            double txr = (tweenCurX - tcx * TILE) / TILE;
-            double tyr = (tweenCurY - tcy * TILE) / TILE;
+            int tcx = (int)(pixelX / TilePx);
+            int tcy = (int)(pixelY / TilePx);
+            double txr = (pixelX - tcx * TilePx) / TilePx;
+            double tyr = (pixelY - tcy * TilePx) / TilePx;
             setPosCase(tcx, tcy, txr, tyr);
         }
 
-        private void EnsurePositionTweenX(double target)
+        /// <summary>
+        /// 创建或重新定位单点补间。
+        /// 该补间对归一化进度 0→1 进行插值；
+        /// 该设置器根据 <see cref="posFromX/Y"/> 和 <see cref="posToX/Y"/>.
+        /// </summary>
+        private void EnsurePositionTween()
         {
-            double speed = 1.0 / (TweenDurationMs * tw.baseFps / 1000.0);
+            double speed = 1.0 / (smoothDurationMs * tw.baseFps / 1000.0);
 
-            if (tweenX != null && !tweenX.done)
+            if (posTween != null && !posTween.done)
             {
-                tweenX.from = tweenCurX;
-                tweenX.to = target;
-                tweenX.ln = 0.0;
-                tweenX.speed = speed;
+                posTween.from = 0.0;
+                posTween.to = 1.0;
+                posTween.ln = 0.0;
+                posTween.speed = speed;
             }
             else
             {
-                tweenX = tw.create_(
-                    getter: () => tweenCurX,
-                    setter: (val) => { tweenCurX = val; ApplyTweenedPos(); },
-                    from: tweenCurX, to: target,
-                    tp: new TType.TLinear(), duration_ms: TweenDurationMs,
+                posTween = tw.create_(
+                    getter: () => posProgress,
+                    setter: (val) =>
+                    {
+                        posProgress = val;
+                        posCurX = posFromX + val * (posToX - posFromX);
+                        posCurY = posFromY + val * (posToY - posFromY);
+                        CommitPosition(posCurX, posCurY);
+                    },
+                    from: 0.0, to: 1.0,
+                    tp: new TType.TLinear(),
+                    duration_ms: smoothDurationMs,
                     allowDuplicates: Ref<bool>.In(true)
                 );
             }
         }
 
-        private void EnsurePositionTweenY(double target)
+        /// <summary>
+        /// 根据最近两次接收到的快照之间的原始包间隔，更新平滑插值的持续时间。
+        /// 使用指数移动平均法来抑制抖动。
+        /// </summary>
+        private void UpdateSmoothDuration()
         {
-            double speed = 1.0 / (TweenDurationMs * tw.baseFps / 1000.0);
-
-            if (tweenY != null && !tweenY.done)
-            {
-                tweenY.from = tweenCurY;
-                tweenY.to = target;
-                tweenY.ln = 0.0;
-                tweenY.speed = speed;
-            }
-            else
-            {
-                tweenY = tw.create_(
-                    getter: () => tweenCurY,
-                    setter: (val) => { tweenCurY = val; ApplyTweenedPos(); },
-                    from: tweenCurY, to: target,
-                    tp: new TType.TLinear(), duration_ms: TweenDurationMs,
-                    allowDuplicates: Ref<bool>.In(true)
-                );
-            }
+            long rawInterval = CurrentState!.TimeStamp - PrevState!.TimeStamp;
+            smoothDurationMs = smoothDurationMs * (1.0 - SmoothingFactor)
+                              + rawInterval * SmoothingFactor;
+            smoothDurationMs = System.Math.Clamp(smoothDurationMs, MinDurationMs, MaxDurationMs);
         }
+
+        /// <summary>
+        /// 应用一个新的、由服务器确定的目标位置。
+        /// 保持视觉连续性。
+        /// </summary>
+        private void ApplyNetworkTarget(PosVector pos, bool firstTime)
+        {
+            double targetX = pos.CX * TilePx + pos.XR * TilePx;
+            double targetY = pos.CY * TilePx + pos.XY * TilePx;
+
+            if (firstTime)
+            {
+                posFromX = posToX = posCurX = targetX;
+                posFromY = posToY = posCurY = targetY;
+                smoothDurationMs = DefaultDurationMs;
+                CommitPosition(targetX, targetY);
+                EnsurePositionTween();
+                return;
+            }
+
+            // 识别是否是传送
+            double threshold = TeleportThresholdPx;
+            double dx = targetX - posCurX;
+            double dy = targetY - posCurY;
+            if (dx * dx + dy * dy > threshold * threshold)
+            {
+                posFromX = posToX = posCurX = targetX;
+                posFromY = posToY = posCurY = targetY;
+                smoothDurationMs = DefaultDurationMs;
+                CommitPosition(targetX, targetY);
+                EnsurePositionTween();
+                return;
+            }
+
+            //根据数据包间隔计算动态持续时间
+            UpdateSmoothDuration();
+
+            //从当前渲染位置继续
+            posFromX = posCurX;
+            posFromY = posCurY;
+            posToX = targetX;
+            posToY = targetY;
+
+            EnsurePositionTween();
+        }
+
 
         protected abstract void OnApplyUpdate(EntityInfo incoming, bool firstTime);
 
@@ -126,21 +185,21 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                 dc.h3d.mat.Texture normalMapFromGroup = sprlib.getNormalMapFromGroup(group);
                 initSprite(sprlib, group, null, null, null, true, null, normalMapFromGroup);
 
-                foreach (AnimTransitions data in info.animInfo.AnimTransitions)
-                {
-                    dc.String? anim = null;
-                    dc.String? to = null;
-                    dc.String? from = null;
+                // foreach (AnimTransitions data in info.animInfo.AnimTransitions)
+                // {
+                //     dc.String? anim = null;
+                //     dc.String? to = null;
+                //     dc.String? from = null;
 
-                    if (data.From != string.Empty)
-                        from = data.From!.AsHaxeString();
-                    if (data.Anim != string.Empty)
-                        anim = data.Anim!.AsHaxeString();
-                    if (data.To != string.Empty)
-                        to = data.To!.AsHaxeString();
+                //     if (data.From != string.Empty)
+                //         from = data.From!.AsHaxeString();
+                //     if (data.Anim != string.Empty)
+                //         anim = data.Anim!.AsHaxeString();
+                //     if (data.To != string.Empty)
+                //         to = data.To!.AsHaxeString();
 
-                    spr.get_anim().registerTransition(from, to, anim, data.speed, data.reverse, null);
-                }
+                //     spr.get_anim().registerTransition(from, to, anim, data.speed, data.reverse, null);
+                // }
 
                 spr.pivot.copyFrom(DCMXSerializers.MessagePack.Deserialize<SpritePivot>(info.MainSprite.PivotData));
 
@@ -148,7 +207,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                 lastColorMapSkin = info.ColorMapSkin;
                 setColorMap(lastColorMapModel?.AsHaxeString(),
                  lastColorMapSkin?.AsHaxeString(), null);
-
 
                 if (info.GlowData != null)
                 {
@@ -169,19 +227,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
             if (spr == null) return;
 
-            var pos = firstTime ? CurrentState.PosVector : PrevState!.PosVector;
-            targetX = pos.CX * 24.0 + pos.XR * 24.0;
-            targetY = pos.CY * 24.0 + pos.XY * 24.0;
-
-            if (firstTime)
-            {
-                setPosCase(pos.CX, pos.CY, pos.XR, pos.XY);
-                tweenCurX = targetX;
-                tweenCurY = targetY;
-            }
-
-            EnsurePositionTweenX(targetX);
-            EnsurePositionTweenY(targetY);
+            ApplyNetworkTarget(CurrentState.PosVector, firstTime);
 
             DisableGameplay();
             UpdateAnim(CurrentState);
@@ -205,13 +251,13 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             if (lastGroup != info.MainSprite.GroupName)
             {
                 lastGroup = info.MainSprite.GroupName;
-                anim.play(info.MainSprite.GroupName.AsHaxeString(), animinfo.Plays, null).loop(null);
+                anim.play(info.MainSprite.GroupName.AsHaxeString(), info.animInfo.Plays, null).loop(null);
             }
 
             if (stack != null)
             {
-                stack.speed = animinfo.Speed;
-                stack.paused = animinfo.Paused;
+                stack.speed = info.animInfo.Speed;
+                stack.paused = info.animInfo.Paused;
             }
         }
 
