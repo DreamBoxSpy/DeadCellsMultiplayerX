@@ -9,9 +9,6 @@ using HaxeProxy.Runtime;
 using ModCore.Utilities;
 using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Common.Serializers;
-using dc.shader;
-using System.Windows.Documents;
-using System.Numerics;
 
 namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 {
@@ -145,7 +142,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                     spr.get_anim().registerTransition(from, to, anim, data.speed, data.reverse, null);
                 }
 
-                info.MainSprite.PivotData.Deserialize(spr.pivot, typeof(SpritePivot));
+                spr.pivot.copyFrom(DCMXSerializers.MessagePack.Deserialize<SpritePivot>(info.MainSprite.PivotData));
 
                 lastColorMapModel = info.ColorMapModel;
                 lastColorMapSkin = info.ColorMapSkin;
@@ -172,7 +169,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
             if (spr == null) return;
 
-            var pos = CurrentState.PosVector;
+            var pos = firstTime ? CurrentState.PosVector : PrevState!.PosVector;
             targetX = pos.CX * 24.0 + pos.XR * 24.0;
             targetY = pos.CY * 24.0 + pos.XY * 24.0;
 

@@ -1,6 +1,9 @@
 ﻿using dc;
+using dc.en;
+using dc.en.hero;
 using dc.libs.heaps.slib;
 using dc.libs.heaps.slib._AnimManager;
+using dc.tool.mainSkills;
 using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Common.Serializers;
 using DeadCellsMultiplayerX.Utils;
@@ -59,7 +62,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
                 inf.GroupName = spr.groupName.ToString();
             }
 
-            inf.PivotData.Serialize(spr?.pivot, typeof(SpritePivot));
+            inf.PivotData = DCMXSerializers.MessagePack.Serialize(spr?.pivot);
             inf.Parent = parent;
 
             var children = spr?.children;

@@ -52,7 +52,7 @@ namespace DeadCellsMultiplayerX.Common.Serializers.Data
             if (reader.TryReadNil())
                 return null;
 
-            Debug.Assert(reader.ReadArrayHeader() == 4);
+            reader.ReadArrayHeader();
 
             int width = reader.ReadInt32();
             int height = reader.ReadInt32();
