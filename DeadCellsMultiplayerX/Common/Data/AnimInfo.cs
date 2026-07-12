@@ -28,10 +28,13 @@ namespace DeadCellsMultiplayerX.Common.Data
         [Key(0)] public List<AnimTransitions> AnimTransitions { get; set; } = new();
         [Key(1)] public ulong PackedA;
         [Key(2)] public ulong PackedB;
+        [Key(3)] public ulong PackedC;
+        [Key(4)] public ulong PackedD;
 
         public const ulong FrameMask = (1UL << 31) - 1;
         public const ulong PausedMask = 1UL << 31;
         private const ulong PlaysMask = ((1UL << 31) - 1) << 32;
+        private const ulong CursorMask = (1UL << 32) - 1;
 
         [IgnoreMember]
         public double Speed
@@ -70,14 +73,23 @@ namespace DeadCellsMultiplayerX.Common.Data
             set => PackedB = (PackedB & ~PlaysMask) | (((ulong)value << 32) & PlaysMask);
         }
 
-        public AnimInfo() { }
-
-        public AnimInfo(double spd, bool paused, int frame, int plays)
+        [IgnoreDataMember]
+        public double playDuration
         {
-            Speed = spd;
-            Paused = paused;
-            Frame = frame;
-            Plays = plays;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => BitConverter.Int64BitsToDouble((long)PackedC);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => PackedC = (ulong)BitConverter.DoubleToInt64Bits(value);
         }
+
+        [IgnoreDataMember]
+        public int animCursor
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (int)(PackedD & CursorMask);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => PackedD = (PackedD & ~CursorMask) | ((uint)value & CursorMask);
+        }
+        public AnimInfo() { }
     }
 }

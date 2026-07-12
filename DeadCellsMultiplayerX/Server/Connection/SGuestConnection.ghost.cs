@@ -96,12 +96,12 @@ namespace DeadCellsMultiplayerX.Server.Connection
                         Speed = current.speed,
                         Paused = current.paused,
                         Frame = spr.frame,
-                        Plays = current.plays
+                        Plays = current.plays,
+                        playDuration = current.playDuration,
                     };
 
                     if (inf.animInfo.AnimTransitions.Count == 0 && transitions.length > 0)
                     {
-                        List<AnimTransitions> anims = [];
                         foreach (Transition data in transitions)
                         {
                             var tr = new AnimTransitions();
@@ -111,9 +111,8 @@ namespace DeadCellsMultiplayerX.Server.Connection
                             tr.reverse = data.reverse;
                             tr.speed = data.spd;
 
-                            anims.Add(tr);
+                            inf.animInfo.AnimTransitions.Add(tr);
                         }
-                        inf.animInfo.AnimTransitions = anims;
                     }
                     inf.animInfo = info;
                 }
@@ -141,14 +140,12 @@ namespace DeadCellsMultiplayerX.Server.Connection
 
             inf.SubLevelId = e._level.GetSubLevelIndex();
             inf.EntityData.Serialize(e, typeof(Entity));
-
-            var pos = new PosVector(e.cx, e.cy, e.xr, e.yr, e.dir);
-            inf.PosVector = pos;
-
             inf.TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
 
             if (e.spr != null)
             {
+                inf.PosVector = new PosVector(e.cx, e.cy, e.xr, e.yr, e.dir);
                 var sinfo = GetSpriteInfo(e.spr);
                 inf.MainSprite = sinfo;
                 FillSpriteInfo(e.spr, inf.GUID, sinfo);

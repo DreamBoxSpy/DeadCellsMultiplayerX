@@ -9,6 +9,8 @@ using HaxeProxy.Runtime;
 using ModCore.Utilities;
 using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Common.Serializers;
+using Serilog.Core;
+using Serilog;
 
 namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 {
@@ -185,21 +187,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                 dc.h3d.mat.Texture normalMapFromGroup = sprlib.getNormalMapFromGroup(group);
                 initSprite(sprlib, group, null, null, null, true, null, normalMapFromGroup);
 
-                // foreach (AnimTransitions data in info.animInfo.AnimTransitions)
-                // {
-                //     dc.String? anim = null;
-                //     dc.String? to = null;
-                //     dc.String? from = null;
-
-                //     if (data.From != string.Empty)
-                //         from = data.From!.AsHaxeString();
-                //     if (data.Anim != string.Empty)
-                //         anim = data.Anim!.AsHaxeString();
-                //     if (data.To != string.Empty)
-                //         to = data.To!.AsHaxeString();
-
-                //     spr.get_anim().registerTransition(from, to, anim, data.speed, data.reverse, null);
-                // }
 
                 spr.pivot.copyFrom(DCMXSerializers.MessagePack.Deserialize<SpritePivot>(info.MainSprite.PivotData));
 
@@ -214,6 +201,26 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                     {
                         if (gdd == null) continue;
                         setGlowData(idx, DCMXSerializers.MessagePack.Deserialize<virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_>(gdd), spr);
+                    }
+                }
+
+
+                if (info.animInfo.AnimTransitions != null)
+                {
+                    foreach (AnimTransitions transition in info.animInfo.AnimTransitions)
+                    {
+                        dc.String? from = transition.From?.AsHaxeString();
+                        dc.String? to = transition.To?.AsHaxeString();
+                        dc.String? a = transition.Anim?.AsHaxeString();
+
+                        spr.get_anim().registerTransition(
+                            from,
+                            to,
+                            a,
+                            transition.speed,
+                            transition.reverse,
+                            null
+                        );
                     }
                 }
             }
@@ -245,12 +252,16 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         public void UpdateAnim(EntityInfo info)
         {
             var animinfo = info.animInfo;
-            if (spr == null || info == null || info.MainSprite == null || animinfo == null) return;
             var anim = spr.get_anim();
+
+            if (spr == null || info == null || info.MainSprite == null || animinfo == null || anim == null) return;
+
             var stack = anim.stack.getDyn(0) as AnimInstance;
             if (lastGroup != info.MainSprite.GroupName)
             {
                 lastGroup = info.MainSprite.GroupName;
+                var cur = anim.stack?.getDyn(0) as AnimInstance;
+                if (cur != null) cur.plays = 0;
                 anim.play(info.MainSprite.GroupName.AsHaxeString(), info.animInfo.Plays, null).loop(null);
             }
 
@@ -258,6 +269,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             {
                 stack.speed = info.animInfo.Speed;
                 stack.paused = info.animInfo.Paused;
+                stack.playDuration = info.animInfo.playDuration;
             }
         }
 
