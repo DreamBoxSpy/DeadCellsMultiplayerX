@@ -100,7 +100,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
                         playDuration = current.playDuration,
                     };
 
-                    if (inf.animInfo.AnimTransitions.Count == 0 && transitions.length > 0)
+                    if (transitions != null && inf.animInfo.AnimTransitions.Count == 0 && transitions.length > 0)
                     {
                         foreach (Transition data in transitions)
                         {
@@ -137,6 +137,8 @@ namespace DeadCellsMultiplayerX.Server.Connection
         private void FillEntityInfo(Entity e, EntityInfo inf)
         {
             inf.TypeName = e.GetType().FullName;
+
+            if (!e.initDone) return;
 
             inf.SubLevelId = e._level.GetSubLevelIndex();
             inf.EntityData.Serialize(e, typeof(Entity));

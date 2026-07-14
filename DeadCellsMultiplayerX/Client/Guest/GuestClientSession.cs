@@ -28,7 +28,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
     /// <summary>
     /// 访客的客户端 session
     /// </summary>
-    internal class GuestClientSession(GuestClient client, Stream serverStream) : ClientSession, 
+    internal class GuestClientSession(GuestClient client, Stream serverStream) : ClientSession,
         IGuestRPC,
         IOnFrameUpdate
     {
@@ -134,7 +134,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
 
         private void Hook__File_saveSteamCloudStatus(HashlinkClosure orig)
         {
-            
+
         }
 
         private bool? Hook__File_getSteamCloudStatus(HashlinkClosure orig)
@@ -145,7 +145,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
         private dc.haxe.io.Bytes Hook__File_getBytes(Hook__File.orig_getBytes orig, dc.String file)
         {
             var fn = file.ToString();
-            if(fn.StartsWith("user"))
+            if (fn.StartsWith("user"))
             {
                 Debug.Assert(saveData != null);
 
@@ -158,7 +158,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
 
         private void Hook__Save_save(Hook__Save.orig_save orig, dc.User u, bool onlyGameData)
         {
-            
+
         }
 
         private void Rpc_Disconnected(object? sender, JsonRpcDisconnectedEventArgs e)
@@ -190,7 +190,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
             Hook__Save.save -= Hook__Save_save;
             Hook__File.getBytes -= Hook__File_getBytes;
 
-            foreach(var v in hooks)
+            foreach (var v in hooks)
             {
                 v.Disable();
             }
@@ -219,11 +219,11 @@ namespace DeadCellsMultiplayerX.Client.Guest
                 DisposeToken.ThrowIfCancellationRequested();
 
                 var g = dc.pr.Game.Class.ME;
-                if(g?.curLevel == null || g.subLevels == null)
+                if (g?.curLevel == null || g.subLevels == null)
                 {
                     continue;
                 }
-                if(!Main.Class.ME.isLoading)
+                if (!Main.Class.ME.isLoading)
                 {
                     break;
                 }
@@ -263,7 +263,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
                 return;
             }
 
-            if(rpc?.IsDisposed ?? true)
+            if (rpc?.IsDisposed ?? true)
             {
                 return;
             }
@@ -271,10 +271,10 @@ namespace DeadCellsMultiplayerX.Client.Guest
             CurrentTimeStamp += stopwatch.ElapsedMilliseconds - prevStopwatchTime;
             prevStopwatchTime = stopwatch.ElapsedMilliseconds;
 
-            if(stopwatch.ElapsedMilliseconds - lastSyncStopwatchTime > 5 * 1000 ||
+            if (stopwatch.ElapsedMilliseconds - lastSyncStopwatchTime > 5 * 1000 ||
                 lastSyncStopwatchTime == 0)
             {
-                if(syncTimeStampTask?.IsCompleted ?? false)
+                if (syncTimeStampTask?.IsCompleted ?? false)
                 {
                     return;
                 }
@@ -287,7 +287,8 @@ namespace DeadCellsMultiplayerX.Client.Guest
                         startTime = stopwatch.ElapsedMilliseconds;
                         var time = await Server.GetTimeStamp();
                         CurrentTimeStamp = time + (stopwatch.ElapsedMilliseconds - startTime) / 2;
-                    }catch(Exception) when (IsDisposed || (rpc?.IsDisposed ?? true))
+                    }
+                    catch (Exception) when (IsDisposed || (rpc?.IsDisposed ?? true))
                     { }
                 }
                 syncTimeStampTask = SyncWithServer();

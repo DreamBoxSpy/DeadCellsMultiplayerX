@@ -16,6 +16,7 @@ using Hashlink.Proxy.Clousre;
 using Hashlink.Proxy.Objects;
 using Hashlink.Reflection;
 using Hashlink.Reflection.Types;
+using HaxeProxy.Runtime;
 using ModCore;
 using ModCore.Events;
 using ModCore.Events.Interfaces.Game;
@@ -39,7 +40,7 @@ namespace DeadCellsMultiplayerX.Server
         /// </summary>
         public static void Entrypoint()
         {
-            _  = new ServerMain();
+            _ = new ServerMain();
 
             // 启动游戏
             System.Type.GetType("ModCore.Startup, ModCore", true)!
@@ -106,6 +107,15 @@ namespace DeadCellsMultiplayerX.Server
             // Hook_Entity.setGlowColor += Hook_Entity_setGlowColor;
             // Hook_Entity.setGlowData += Hook_Entity_setGlowData;
             Hook_Entity.dispose += Hook_Entity_dispose;
+
+            Hook_Game.init += Hook_Game_init;
+        }
+
+        private void Hook_Game_init(Hook_Game.orig_init orig, dc.pr.Game self)
+        {
+            orig(self);
+            self.gameSignals.heroInitDone.add(new HlAction<Hero>((hero) => EventSystem.BroadcastEvent<IOnHeroInitDone, Hero>(hero)),
+            null, null, null);
         }
 
         private void Hook_Entity_dispose(Hook_Entity.orig_dispose orig, Entity self)
@@ -117,7 +127,7 @@ namespace DeadCellsMultiplayerX.Server
 
         private void Hook__File_saveSteamCloudStatus(HashlinkClosure orig)
         {
-           
+
         }
 
         private bool? Hook__File_getSteamCloudStatus(HashlinkClosure orig)
@@ -125,8 +135,8 @@ namespace DeadCellsMultiplayerX.Server
             return null;
         }
 
-        private void Hook_Entity_setGlowData(Hook_Entity.orig_setGlowData orig, Entity self, int index, 
-            Hashlink.Virtuals.virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_ glowData, 
+        private void Hook_Entity_setGlowData(Hook_Entity.orig_setGlowData orig, Entity self, int index,
+            Hashlink.Virtuals.virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_ glowData,
             HSprite sprite)
         {
             EventSystem.BroadcastEvent<IOnEntitySetGlowData, IOnEntitySetGlowData.Data>(new(self, index, glowData));
@@ -165,7 +175,7 @@ namespace DeadCellsMultiplayerX.Server
             EventSystem.BroadcastEvent<IOnEntitySetColorMap, IOnEntitySetColorMap.Data>(new(self, model.ToString(), skin.ToString()));
         }
 
-        private SpriteLib Hook__Atlas_load(dc.libs.heaps.slib.assets.Hook__Atlas.orig_load orig, dc.String atlasPath, 
+        private SpriteLib Hook__Atlas_load(dc.libs.heaps.slib.assets.Hook__Atlas.orig_load orig, dc.String atlasPath,
             HaxeProxy.Runtime.HlAction onReload, dc.hl.types.ArrayObj notZeroBaseds, dc.hl.types.ArrayObj properties)
         {
             var lib = orig(atlasPath, onReload, notZeroBaseds, properties);
@@ -173,7 +183,7 @@ namespace DeadCellsMultiplayerX.Server
             return lib;
         }
 
-        private void Hook_TitleScreen_initTitleScreen(Hook_TitleScreen.orig_initTitleScreen orig, TitleScreen self, 
+        private void Hook_TitleScreen_initTitleScreen(Hook_TitleScreen.orig_initTitleScreen orig, TitleScreen self,
             SpriteLib titleLib, HaxeProxy.Runtime.Ref<int> bgType)
         {
             orig(self, titleLib, bgType);
@@ -192,7 +202,7 @@ namespace DeadCellsMultiplayerX.Server
 
         }
 
-       
+
         private dc.String Hook__Save_fileName(Hook__Save.orig_fileName orig, int? slot)
         {
             return System.IO.Path.GetFileName(savePath).AsHaxeString();
@@ -200,7 +210,7 @@ namespace DeadCellsMultiplayerX.Server
 
         private void Hook_Window_setFullScreen(Hook_Window.orig_setFullScreen orig, Window self, bool v)
         {
-            
+
         }
 
         private void Hook__Window___constructor__(Hook__Window.orig___constructor__ orig, Window arg1, dc.String title, int width, int height)
@@ -222,7 +232,7 @@ namespace DeadCellsMultiplayerX.Server
 
         private void Hook_Texture_dispose(Hook_Texture.orig_dispose orig, Texture self)
         {
-           
+
         }
 
         private Image? img4096x4096;
@@ -232,17 +242,17 @@ namespace DeadCellsMultiplayerX.Server
         {
             var p = path.ToString();
 
-            if(c == Image.Class)
+            if (c == Image.Class)
             {
                 //return img4096x4096 ??= new Image(self.load("atlas/beheaded0.png".AsHaxeString()).entry);
             }
-            else if(c == Sound.Class)
+            else if (c == Sound.Class)
             {
                 return soundEmpty ??= new Sound(self.load("sfx/noSound_Error.wav".AsHaxeString()).entry);
             }
 
             return orig(self, path, c);
-            
+
         }
 
     }
