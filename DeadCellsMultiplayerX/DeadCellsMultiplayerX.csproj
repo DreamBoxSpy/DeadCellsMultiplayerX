@@ -17,9 +17,12 @@
 
   <ItemGroup>
     <PackageReference Include="DeadCellsCoreModding.MDK" Version="1.0.1" />
+    <PackageReference Include="MemoryPack" Version="1.21.4" />
     <PackageReference Include="Microsoft.Native.Quic.MsQuic.OpenSSL" Version="2.5.8" />
     <PackageReference Include="StbImageSharp" Version="2.30.15" />
-    <PackageReference Include="StreamJsonRpc" Version="2.25.25" />
+    <PackageReference Include="Steamworks.NET" Version="20.2.0" />
+    <PackageReference Include="MessagePack" Version="3.1.7" />
+    <PackageReference Include="StreamJsonRpc" Version="2.25.29" />
 
     <ModDependency Include="DebugConsole" />
   </ItemGroup>
@@ -30,22 +33,12 @@
     <Reference Include="DebugConsole" />
 
     <Reference Include="CoreLibrary">
-      <HintPath>libs\CoreLibrary.dll</HintPath>
+      <HintPath>libs\CoreLibrary\CoreLibrary.dll</HintPath>
+      <Private>false</Private>
     </Reference>
 
     <OutputFiles Include="msquic.dll" />
-    <OutputFiles Include="libs\CoreLibrary.dll" />
-    
-    <OutputFiles Include="$(OutputPath)/StreamJsonRpc.dll" />
-    <OutputFiles Include="$(OutputPath)/StbImageSharp.dll" />
-    <OutputFiles Include="$(OutputPath)/Nerdbank.MessagePack.dll" />
-    <OutputFiles Include="$(OutputPath)/MessagePack.Annotations.dll" />
-    <OutputFiles Include="$(OutputPath)/MessagePack.dll" />
-    <OutputFiles Include="$(OutputPath)/Microsoft.NET.StringTools.dll" />
-    <OutputFiles Include="$(OutputPath)/Microsoft.VisualStudio.Threading.dll" />
-    <OutputFiles Include="$(OutputPath)/Microsoft.VisualStudio.Validation.dll" />
-    <OutputFiles Include="$(OutputPath)/Nerdbank.Streams.dll" />
-    <OutputFiles Include="$(OutputPath)/PolyType.dll" />
+    <OutputFiles Include="libs\**\*.dll" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,5 +54,24 @@
   <ItemGroup>
     <PackAssets Include="Assets/**/*" RootInPak="DeadCellsMultiplayerX" />
   </ItemGroup>
+
+  <Target Name="StageNuGetDeps" AfterTargets="Build" BeforeTargets="CopyOutputFiles">
+    <MakeDir Directories="libs\StreamJsonRpc;libs\StbImageSharp;libs\Steamworks" />
+    <Copy SourceFiles="$(OutputPath)/Steamworks.NET.dll" DestinationFolder="libs\Steamworks\" />
+    <Copy SourceFiles="$(OutputPath)/StreamJsonRpc.dll" DestinationFolder="libs\StreamJsonRpc\" />
+    <Copy SourceFiles="$(OutputPath)/Nerdbank.MessagePack.dll" DestinationFolder="libs\StreamJsonRpc\" />
+    <Copy SourceFiles="$(OutputPath)/Nerdbank.Streams.dll" DestinationFolder="libs\StreamJsonRpc\" />
+    <Copy SourceFiles="$(OutputPath)/MessagePack.dll" DestinationFolder="libs\StreamJsonRpc\" />
+    <Copy SourceFiles="$(OutputPath)/MessagePack.Annotations.dll" DestinationFolder="libs\StreamJsonRpc\" />
+    <Copy SourceFiles="$(OutputPath)/PolyType.dll" DestinationFolder="libs\StreamJsonRpc\" />
+    <Copy SourceFiles="$(OutputPath)/Microsoft.NET.StringTools.dll" DestinationFolder="libs\StreamJsonRpc\" />
+    <Copy SourceFiles="$(OutputPath)/Microsoft.VisualStudio.Threading.dll" DestinationFolder="libs\StreamJsonRpc\" />
+    <Copy SourceFiles="$(OutputPath)/Microsoft.VisualStudio.Validation.dll" DestinationFolder="libs\StreamJsonRpc\" />
+    <Copy SourceFiles="$(OutputPath)/StbImageSharp.dll" DestinationFolder="libs\StbImageSharp\" />
+    <Copy SourceFiles="$(OutputPath)/MemoryPack.Core.dll" DestinationFolder="libs\MemoryPack\"/>
+    <ItemGroup>
+      <OutputFiles Include="libs\**\*.dll" />
+    </ItemGroup>
+  </Target>
 
 </Project>

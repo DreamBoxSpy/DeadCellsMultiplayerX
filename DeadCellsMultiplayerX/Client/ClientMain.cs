@@ -14,6 +14,8 @@ using dc;
 using ModCore.Modules;
 using DeadCellsMultiplayerX.Client.UI.Modes;
 using ModCore.Events;
+using dc.en;
+using DeadCellsMultiplayerX.Client.Event;
 using DeadCellsMultiplayerX.Server.Events;
 
 namespace DeadCellsMultiplayerX.Client
@@ -49,8 +51,16 @@ namespace DeadCellsMultiplayerX.Client
                 lobby?.Hide();
                 lobby?.destroy();
             };
+
+            Hook_Game.init += Hook_Game_init;
         }
 
+        private void Hook_Game_init(Hook_Game.orig_init orig, dc.pr.Game self)
+        {
+            orig(self);
+            self.gameSignals.heroInitDone.add(new HlAction<Hero>((hero) => EventSystem.BroadcastEvent<IOnGuestHeroInitDone, Hero>(hero)),
+            null, null, null);
+        }
 
 
         private void Hook_GlowKey_applyGlowData(Hook_GlowKey.orig_applyGlowData orig, GlowKey self,

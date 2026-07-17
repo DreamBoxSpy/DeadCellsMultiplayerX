@@ -11,10 +11,7 @@ namespace DeadCellsMultiplayerX.Common.Data
         public long TimeStamp { get; set; } = 0;
         public string AtlasName { get; set; } = "";
         public string GroupName { get; set; } = "";
-        public int Frame { get; set; }
-        public SimpleObjData SpriteData { get; set; } = new();
-        public SimpleObjData PivotData { get; set; } = new();
-
+        public byte[] PivotData { get; set; } = [];
         public List<SpriteInfo> Children { get; set; } = [];
     }
 }

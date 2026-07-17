@@ -65,6 +65,8 @@ namespace DeadCellsMultiplayerX.Client
         /// </summary>
         public string SkinMould { get; set; } = string.Empty;
 
+        public bool HeroInitDone { get; set; } = false;
+
         public GuestInfo Clone() => (GuestInfo) MemberwiseClone();
     }
 }

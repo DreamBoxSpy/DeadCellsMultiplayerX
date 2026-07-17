@@ -1,4 +1,5 @@
 ﻿using dc;
+using dc.en;
 using dc.libs.heaps.slib;
 using DeadCellsMultiplayerX.Client;
 using DeadCellsMultiplayerX.Client.Guest;
@@ -32,7 +33,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
         IOnEntitySetGlowData,
         IOnEntityDisposed
     {
-        
+
 
         private IServerRPC.AreaInfoRequest? lastRequest;
 
@@ -43,6 +44,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
         public ServerSession Session { get; }
         public ServerMainThread Main => Session.Main;
         public IGuestRPC guest;
+        private bool EnterNewLevelEnd { get; set; } = false;
 
 
         public SGuestConnection(ServerSession session, Stream connection)
@@ -89,6 +91,10 @@ namespace DeadCellsMultiplayerX.Server.Connection
             Debug.Assert(Main.savePath != null);
 
             guest.EnterNewLevel(File.ReadAllBytes(Main.savePath));
+
+            EnterNewLevelEnd = true;
+            
+            EventSystem.BroadcastEvent<IOnHeroInitDone, Hero>(Game.Instance.HeroInstance!);
         }
 
         void IOnEntitySetColorMap.OnEntitySetColorMap(IOnEntitySetColorMap.Data data)
@@ -102,12 +108,8 @@ namespace DeadCellsMultiplayerX.Server.Connection
 
         void IOnEntitySetGlowData.OnEntitySetGlowData(IOnEntitySetGlowData.Data data)
         {
-            var info = GetEntityInfo(data.Entity);
-
-            var gd = new virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_();
-            var gdd = new SimpleObjData();
-            gdd.Serialize(gd, null);
-            info.GlowData[data.Index] = gdd;
+            // var info = GetEntityInfo(data.Entity);
+            // info.GlowData[data.Index] = new byte[1024];
         }
 
         void IOnEntityDisposed.OnEntityDisposed(Entity e)

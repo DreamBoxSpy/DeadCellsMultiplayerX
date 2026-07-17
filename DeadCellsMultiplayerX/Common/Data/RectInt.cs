@@ -1,14 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿
+using System.Runtime.CompilerServices;
+using MessagePack;
 
 namespace DeadCellsMultiplayerX.Common.Data
 {
+    [MessagePackObject]
     public struct RectInt
     {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
+        public RectInt() { }
+        public RectInt(int x, int y, int wid, int hei)
+        {
+            X = x;
+            Y = y;
+            Width = wid;
+            Height = hei;
+        }
+
+        [Key(0)]
+        public int X
+        {
+            get; set;
+        }
+        [Key(1)]
+        public int Y
+        {
+            get; set;
+        }
+        [Key(2)]
+        public int Width
+        {
+            get; set;
+        }
+        [Key(3)]
+        public int Height
+        {
+            get; set;
+        }
     }
 }

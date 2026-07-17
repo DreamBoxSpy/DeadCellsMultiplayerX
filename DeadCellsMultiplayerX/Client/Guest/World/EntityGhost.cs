@@ -1,7 +1,6 @@
 ﻿using dc;
 using dc.libs.heaps.slib;
 using dc.pr;
-using DeadCellsMultiplayerX.Client.Guest.Ghost;
 using DeadCellsMultiplayerX.Common;
 using DeadCellsMultiplayerX.Common.Data;
 using Hashlink.Virtuals;
@@ -68,7 +67,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.World
                 foreach((var idx, var gdd) in currentInfo.GlowData)
                 {
                     var gd = new virtual_animationIntensity_animationScale_animationSpeed_animationTextureMask_inner_key_outer_power_();
-                    gdd.Deserialize(gd, null);
+                    //gdd.Deserialize(gd, null);
                     ghost.setGlowData(idx, gd, null);
                 }
             }

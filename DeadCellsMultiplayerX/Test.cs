@@ -17,7 +17,7 @@ namespace DeadCellsMultiplayerX
 
             await Task.Delay(500);
 
-            //await ClientMain.Instance.CurrentHostClient!.StartGame();
+            await ClientMain.Instance.CurrentHostClient!.StartGame();
         }
 
         public static async void StartClient()

@@ -1,5 +1,4 @@
 ﻿using dc.libs.heaps.slib;
-using DeadCellsMultiplayerX.Client.Guest.Ghost;
 using DeadCellsMultiplayerX.Common.Data;
 using HaxeProxy.Runtime;
 using ModCore.Utilities;
@@ -84,18 +83,18 @@ namespace DeadCellsMultiplayerX.Client.Guest.World
             var lib = director.GetSpriteLib(atlas);
             var groupName = currentInfo.GroupName?.AsHaxeString();
 
-            currentInfo.PivotData.Deserialize(ghost.pivot, typeof(SpritePivot));
+            //currentInfo.PivotData.Deserialize(ghost.pivot, typeof(SpritePivot));
 
             if (lib != ghost.lib || prevInfo == null || prevInfo.GroupName != currentInfo.GroupName)
             {
-                ghost.set(lib, groupName, Ref<int>.In(currentInfo.Frame), default);
+                //ghost.set(lib, groupName, Ref<int>.In(currentInfo.Frame), default);
                 ghost.get_anim().play(groupName, int.MaxValue, null);
             }
 
             var delt = (director.Session.CurrentTimeStamp - currentInfo.TimeStamp) / 1000f;
 
             var anim = ghost.get_anim();
-            anim.setFrame(currentInfo.Frame);
+            //anim.setFrame(currentInfo.Frame);
 
             if (delt < 0)
             {

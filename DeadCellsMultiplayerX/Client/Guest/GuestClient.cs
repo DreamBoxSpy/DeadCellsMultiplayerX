@@ -1,27 +1,30 @@
 ﻿using dc;
+using dc.en;
 using dc.tool;
+using DeadCellsMultiplayerX.Client.Event;
+using DeadCellsMultiplayerX.Client.Guest.WorldX;
 using DeadCellsMultiplayerX.Client.Host;
 using DeadCellsMultiplayerX.Client.Networks;
 using DeadCellsMultiplayerX.Utils;
-using Microsoft.VisualStudio.Threading;
-using Nerdbank.Streams;
+using Serilog;
 using StreamJsonRpc;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
+
 
 namespace DeadCellsMultiplayerX.Client.Guest
 {
-    internal class GuestClient(BaseNetworkConnection remote) : ClientBase
+    internal class GuestClient(BaseNetworkConnection remote) : ClientBase,
+    IOnGuestHeroInitDone
     {
         private JsonRpc? rpc;
         private IHostClientRPC? hostInterfact;
         private GuestClientSession? session;
+        private GuestHeroManager? guestHeroManager;
 
         public CancellationTokenSource DisconnectToken { get; } = new();
 
         public LobbyInfo? LobbyInfo { get; set; }
+        public GameSessionInfo? gameSessionInfo { get; set; }
 
         public string Guid { get; set; } = "";
 
@@ -35,7 +38,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
             rpc.Disconnected += Rpc_Disconnected;
             rpc.StartListening();
 
-            if(!await hostInterfact.CheckVersion(
+            if (!await hostInterfact.CheckVersion(
                 VersionUtils.ModVersion.ToString()
                 ))
             {
@@ -51,7 +54,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
             SetReady(false);
 
             LobbyInfo = await hostInterfact.GetLobbyInfo();
-
+            gameSessionInfo = await hostInterfact.GetGameSessionInfo();
             _ = MessageLoop();
         }
 
@@ -65,6 +68,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
                 DisposeToken.ThrowIfCancellationRequested();
 
                 LobbyInfo = await hostInterfact.GetLobbyInfo();
+                gameSessionInfo = await hostInterfact.GetGameSessionInfo();
 
                 if (LobbyInfo.CanConnectServer)
                 {
@@ -79,7 +83,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
 
         private void Rpc_Disconnected(object? sender, JsonRpcDisconnectedEventArgs e)
         {
-            if(e.Reason == DisconnectedReason.LocallyDisposed)
+            if (e.Reason == DisconnectedReason.LocallyDisposed)
             {
                 return;
             }
@@ -115,6 +119,13 @@ namespace DeadCellsMultiplayerX.Client.Guest
             return hostInterfact.SetSkinMould(skinMould);
         }
 
+        public Task HeroInitDone(bool initdone)
+        {
+            Debug.Assert(hostInterfact != null);
+            hostInterfact.HeroInitDone(true);
+            return Task.CompletedTask;
+        }
+
         public async Task<long> Ping()
         {
             if (IsDisposed || rpc == null || rpc.IsDisposed)
@@ -136,6 +147,13 @@ namespace DeadCellsMultiplayerX.Client.Guest
             }
 
             Dispose();
+        }
+
+        void IOnGuestHeroInitDone.OnHeroInitDone(Hero hero)
+        {
+            Debug.Assert(session != null);
+
+            guestHeroManager = new GuestHeroManager(session, Log.ForContext<GuestHeroManager>(), hero);
         }
     }
 }
