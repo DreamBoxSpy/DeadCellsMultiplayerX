@@ -17,6 +17,12 @@ namespace DeadCellsMultiplayerX.Client.Host
         public Task<LobbyInfo> GetLobbyInfo();
 
         /// <summary>
+        /// 获取游戏时基本信息
+        /// </summary>
+        /// <returns></returns>
+        public Task<GameSessionInfo> GetGameSessionInfo();
+
+        /// <summary>
         /// 获取当前玩家的 GUID
         /// </summary>
         /// <returns></returns>

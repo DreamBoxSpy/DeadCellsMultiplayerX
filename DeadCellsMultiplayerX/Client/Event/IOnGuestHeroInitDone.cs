@@ -1,7 +1,7 @@
 using dc.en;
 using ModCore.Events;
 
-namespace DeadCellsMultiplayerX.Server.Events
+namespace DeadCellsMultiplayerX.Client.Event
 {
 
     [Event]

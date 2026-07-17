@@ -58,6 +58,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
         public IServerRPC Server => server ?? throw new InvalidOperationException();
 
         public dc.pr.Game Game => dc.pr.Game.Class.ME;
+        public GuestClient Client { get; private set; } = null!;
 
         public override async Task Init()
         {
@@ -83,6 +84,8 @@ namespace DeadCellsMultiplayerX.Client.Guest
             }
 
             Debug.Assert(client.LobbyInfo != null);
+
+            Client = client;
 
             if (client.LobbyInfo.Owner == client.Guid)
             {

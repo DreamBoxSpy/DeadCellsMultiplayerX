@@ -14,8 +14,9 @@ using dc;
 using ModCore.Modules;
 using DeadCellsMultiplayerX.Client.UI.Modes;
 using ModCore.Events;
-using DeadCellsMultiplayerX.Server.Events;
 using dc.en;
+using DeadCellsMultiplayerX.Client.Event;
+using DeadCellsMultiplayerX.Server.Events;
 
 namespace DeadCellsMultiplayerX.Client
 {

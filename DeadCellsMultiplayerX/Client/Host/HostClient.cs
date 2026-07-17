@@ -31,6 +31,11 @@ namespace DeadCellsMultiplayerX.Client.Host
         public LobbyInfo LobbyInfo { get; set; } = new();
 
         /// <summary>
+        /// 游戏时基本信息
+        /// </summary>
+        public GameSessionInfo GameSessionInfo { get; set; } = new();
+
+        /// <summary>
         /// 是否可以开始游戏
         /// </summary>
         public bool CanStartGame => !LobbyInfo.IsStarted && !LobbyInfo.CanConnectServer && LobbyInfo.Guests.Values.All(x => x.IsReady);
