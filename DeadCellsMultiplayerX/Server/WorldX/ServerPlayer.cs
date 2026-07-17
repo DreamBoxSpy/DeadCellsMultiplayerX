@@ -7,6 +7,9 @@ namespace DeadCellsMultiplayerX.Server.WorldX
 {
     public class ServerPlayer
     {
-        
+        public ServerPlayer()
+        {
+            
+        }
     }
 }

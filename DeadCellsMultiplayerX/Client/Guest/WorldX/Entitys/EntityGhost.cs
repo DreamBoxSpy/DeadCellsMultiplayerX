@@ -4,7 +4,7 @@ using DeadCellsMultiplayerX.Common.Data;
 using Hashlink.Virtuals;
 using ModCore.Utilities;
 
-namespace DeadCellsMultiplayerX.Client.Guest.WorldX
+namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
 {
     public class EntityGhost : Ghost
     {

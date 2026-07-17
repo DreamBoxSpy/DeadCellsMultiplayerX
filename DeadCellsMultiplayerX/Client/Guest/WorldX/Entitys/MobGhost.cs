@@ -2,7 +2,7 @@ using dc;
 using dc.pr;
 using DeadCellsMultiplayerX.Common.Data;
 
-namespace DeadCellsMultiplayerX.Client.Guest.WorldX
+namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
 {
     public class MobGhost : Ghost
     {

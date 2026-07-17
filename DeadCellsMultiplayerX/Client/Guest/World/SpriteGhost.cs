@@ -1,5 +1,4 @@
 ﻿using dc.libs.heaps.slib;
-using DeadCellsMultiplayerX.Client.Guest.Ghost;
 using DeadCellsMultiplayerX.Common.Data;
 using HaxeProxy.Runtime;
 using ModCore.Utilities;

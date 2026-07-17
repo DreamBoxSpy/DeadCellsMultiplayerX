@@ -1,4 +1,5 @@
 ﻿using dc;
+using dc.en;
 using dc.libs.heaps.slib;
 using DeadCellsMultiplayerX.Client;
 using DeadCellsMultiplayerX.Client.Guest;
@@ -43,6 +44,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
         public ServerSession Session { get; }
         public ServerMainThread Main => Session.Main;
         public IGuestRPC guest;
+        private bool EnterNewLevelEnd { get; set; } = false;
 
 
         public SGuestConnection(ServerSession session, Stream connection)
@@ -89,6 +91,10 @@ namespace DeadCellsMultiplayerX.Server.Connection
             Debug.Assert(Main.savePath != null);
 
             guest.EnterNewLevel(File.ReadAllBytes(Main.savePath));
+
+            EnterNewLevelEnd = true;
+            
+            EventSystem.BroadcastEvent<IOnHeroInitDone, Hero>(Game.Instance.HeroInstance!);
         }
 
         void IOnEntitySetColorMap.OnEntitySetColorMap(IOnEntitySetColorMap.Data data)

@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-namespace DeadCellsMultiplayerX.Client.Guest.Ghost
+namespace DeadCellsMultiplayerX.Client.Guest
 {
     /// <summary>
     /// 控制客户端的表现

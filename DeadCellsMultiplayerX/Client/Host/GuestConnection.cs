@@ -122,6 +122,12 @@ namespace DeadCellsMultiplayerX.Client.Host
 
         public Task Ping() => Task.CompletedTask;
 
+        public void HeroInitDone(bool InitDone)
+        {
+            Logger.Information("Hero Init Done as '{F1}'", guestInfo.Guid);
+            guestInfo.HeroInitDone = InitDone;
+        }
+
         public Task<Stream> GetServerStream()
         {
             if(!host.LobbyInfo.CanConnectServer ||
@@ -161,6 +167,5 @@ namespace DeadCellsMultiplayerX.Client.Host
                 });
         }
 
-        
     }
 }

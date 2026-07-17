@@ -12,7 +12,7 @@ using DeadCellsMultiplayerX.Common.Serializers;
 using Serilog.Core;
 using Serilog;
 
-namespace DeadCellsMultiplayerX.Client.Guest.WorldX
+namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
 {
     public abstract class Ghost : Entity
     {

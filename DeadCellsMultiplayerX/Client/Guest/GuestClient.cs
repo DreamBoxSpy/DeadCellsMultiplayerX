@@ -1,7 +1,9 @@
 ﻿using dc;
+using dc.en;
 using dc.tool;
 using DeadCellsMultiplayerX.Client.Host;
 using DeadCellsMultiplayerX.Client.Networks;
+using DeadCellsMultiplayerX.Server.Events;
 using DeadCellsMultiplayerX.Utils;
 using Microsoft.VisualStudio.Threading;
 using Nerdbank.Streams;
@@ -13,7 +15,8 @@ using System.Text;
 
 namespace DeadCellsMultiplayerX.Client.Guest
 {
-    internal class GuestClient(BaseNetworkConnection remote) : ClientBase
+    internal class GuestClient(BaseNetworkConnection remote) : ClientBase,
+    IOnGuestHeroInitDone
     {
         private JsonRpc? rpc;
         private IHostClientRPC? hostInterfact;
@@ -136,6 +139,13 @@ namespace DeadCellsMultiplayerX.Client.Guest
             }
 
             Dispose();
+        }
+
+        void IOnGuestHeroInitDone.OnHeroInitDone(Hero hero)
+        {
+            Debug.Assert(hostInterfact != null);
+            
+            hostInterfact.HeroInitDone(true);
         }
     }
 }

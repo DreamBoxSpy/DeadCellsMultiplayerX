@@ -1,7 +1,6 @@
 ﻿using dc;
 using dc.libs.heaps.slib;
 using dc.pr;
-using DeadCellsMultiplayerX.Client.Guest.Ghost;
 using DeadCellsMultiplayerX.Common;
 using DeadCellsMultiplayerX.Common.Data;
 using Hashlink.Virtuals;

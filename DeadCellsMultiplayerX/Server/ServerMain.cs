@@ -108,7 +108,7 @@ namespace DeadCellsMultiplayerX.Server
             // Hook_Entity.setGlowData += Hook_Entity_setGlowData;
             Hook_Entity.dispose += Hook_Entity_dispose;
 
-            Hook_Game.init += Hook_Game_init;
+            //Hook_Game.init += Hook_Game_init;
         }
 
         private void Hook_Game_init(Hook_Game.orig_init orig, dc.pr.Game self)

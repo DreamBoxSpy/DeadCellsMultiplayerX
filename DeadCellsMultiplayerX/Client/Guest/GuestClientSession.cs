@@ -3,7 +3,6 @@ using dc.en;
 using dc.en.inter;
 using dc.pr;
 using dc.tool;
-using DeadCellsMultiplayerX.Client.Guest.Ghost;
 using DeadCellsMultiplayerX.Client.Guest.WorldX;
 using DeadCellsMultiplayerX.Client.Host;
 using DeadCellsMultiplayerX.Common.Data;
