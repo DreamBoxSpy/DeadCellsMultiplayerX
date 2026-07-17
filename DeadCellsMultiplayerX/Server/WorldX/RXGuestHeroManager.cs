@@ -5,11 +5,8 @@ using System.Threading.Tasks;
 
 namespace DeadCellsMultiplayerX.Server.WorldX
 {
-    public class ServerPlayer
+    public class RXGuestHeroManager
     {
-        public ServerPlayer()
-        {
-            
-        }
+        
     }
 }

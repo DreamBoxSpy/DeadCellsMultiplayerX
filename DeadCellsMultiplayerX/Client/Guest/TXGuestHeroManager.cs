@@ -3,34 +3,36 @@ using System.Text.Json;
 using dc.en;
 using DeadCellsMultiplayerX.Client.Guest.WorldX.Entities;
 using ModCore.Events;
+using ModCore.Events.Interfaces.Game;
 using ModCore.Events.Interfaces.Game.Hero;
 using Serilog;
 
 namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 {
-    internal class GuestHeroManager :
+    internal class TXGuestHeroManager :
     IOnHeroUpdate,
-    IEventReceiver
+    IEventReceiver,
+    IOnFrameUpdate
     {
         private readonly GuestClientSession session;
         private readonly ILogger logger;
         public PlayerGhost? RemoteHero { get; private set; }
         public GuestInfo? GuestInfo { get; private set; }
-        public Hero? hero { get; }
+        public Hero? hero { get; set; }
         public string? RemoteSkinId { get; private set; }
         public string? RemoteHeadSkinId { get; private set; }
 
         public string? guid { get; set; }
         public bool isOwner { get; }
-        public static async Task<GuestHeroManager> CreateAsync(GuestClientSession session, ILogger logger, Hero hero)
+        public static async Task<TXGuestHeroManager> CreateAsync(GuestClientSession session, ILogger logger, Hero hero)
         {
-            var manager = new GuestHeroManager(session, logger, hero);
+            var manager = new TXGuestHeroManager(session, logger, hero);
             await manager.InitializeAsync();
             return manager;
         }
 
         // Minimal constructor for field init only
-        private GuestHeroManager(GuestClientSession session, ILogger logger, Hero hero)
+        private TXGuestHeroManager(GuestClientSession session, ILogger logger, Hero hero)
         {
             EventSystem.AddReceiver(this);
             this.session = session;
@@ -48,13 +50,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             Debug.Assert(guid != null);
 
             // Tell host hero init is done
-            session.Client.HeroInitDone(true);
-
-            // Optimistic local update: we know we just sent HeroInitDone, so update local state immediately
-            if (session.Client.LobbyInfo.Guests.ContainsKey(guid))
-            {
-                session.Client.LobbyInfo.Guests[guid].HeroInitDone = true;
-            }
+            await session.Client.HeroInitDone(true);
 
             // Refresh full state from host (for any other changes)
             await session.Client.RefreshLobbyInfo();
@@ -64,13 +60,18 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             GuestInfo = GetCurrentGuestInfo();
 
             var options = new JsonSerializerOptions { WriteIndented = true };
-            logger.Information("GuestInfo: {Json}", JsonSerializer.Serialize(GuestInfo, options));
-            logger.Information("Game Base info {F1},", JsonSerializer.Serialize(session.Client.gameSessionInfo, options));
+            logger.Information("\n GuestInfo: {Json}", JsonSerializer.Serialize(GuestInfo, options));
+            logger.Information("\n Game Base info {F1},", JsonSerializer.Serialize(session.Client.gameSessionInfo, options));
         }
 
-        public void update()
+        public void FrameUpdate()
         {
 
+        }
+
+        public void HeroUpdate(Hero hero)
+        {
+            
         }
 
         public GuestInfo? GetCurrentGuestInfo()
@@ -89,21 +90,22 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         }
 
 
-
-
         public void Clear()
         {
             RemoteHero?.destroy();
+            hero = null;
             RemoteHero = null;
             RemoteSkinId = null;
             RemoteHeadSkinId = null;
+            GuestInfo = null;
         }
 
         void IOnHeroUpdate.OnHeroUpdate(double dt)
         {
-            // var options = new JsonSerializerOptions { WriteIndented = true };
-            // logger.Information("Game Base info {F1},", JsonSerializer.Serialize(session.Client.gameSessionInfo, options));
+            if (hero == null) return;
+            HeroUpdate(hero);
         }
 
+        void IOnFrameUpdate.OnFrameUpdate(double dt) => FrameUpdate();
     }
 }

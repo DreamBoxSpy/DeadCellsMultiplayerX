@@ -183,7 +183,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
             return false;
         }
 
-        private bool TryUpdateEntity(Entity e)
+        public bool TryUpdateEntity(Entity e)
         {
             if (TryGetInfoIfVisable(e, out var inf))
             {

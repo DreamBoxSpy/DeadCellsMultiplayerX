@@ -19,7 +19,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
         private JsonRpc? rpc;
         private IHostClientRPC? hostInterfact;
         private GuestClientSession? session;
-        private GuestHeroManager? guestHeroManager;
+        private TXGuestHeroManager? guestHeroManager;
 
         public CancellationTokenSource DisconnectToken { get; } = new();
 
@@ -165,7 +165,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
         {
             Debug.Assert(session != null);
 
-            guestHeroManager = await GuestHeroManager.CreateAsync(session, Log.ForContext<GuestHeroManager>(), hero);
+            guestHeroManager = await TXGuestHeroManager.CreateAsync(session, Log.ForContext<TXGuestHeroManager>(), hero);
         }
     }
 }
