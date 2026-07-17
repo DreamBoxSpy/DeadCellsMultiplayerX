@@ -134,6 +134,7 @@ namespace DeadCellsMultiplayerX.Client.Host
         {
             Logger.Information("Hero Init Done as '{F1}'", guestInfo.Guid);
             plyerGameinfo.HeroInitDone = InitDone;
+            guestInfo.HeroInitDone = InitDone;
         }
 
         public Task<Stream> GetServerStream()

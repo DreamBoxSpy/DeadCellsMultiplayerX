@@ -22,37 +22,49 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         public string? guid { get; set; }
         public bool isOwner { get; }
-        public GuestHeroManager(GuestClientSession session, ILogger logger, Hero hero)
+        public static async Task<GuestHeroManager> CreateAsync(GuestClientSession session, ILogger logger, Hero hero)
+        {
+            var manager = new GuestHeroManager(session, logger, hero);
+            await manager.InitializeAsync();
+            return manager;
+        }
+
+        // Minimal constructor for field init only
+        private GuestHeroManager(GuestClientSession session, ILogger logger, Hero hero)
         {
             EventSystem.AddReceiver(this);
-
             this.session = session;
             this.logger = logger;
-
+            this.hero = hero;
+            guid = session.Client.Guid;
 
             if (session.Client.LobbyInfo?.Owner == session.Client.Guid)
                 isOwner = true;
+        }
 
+        private async Task InitializeAsync()
+        {
+            Debug.Assert(session.Client.LobbyInfo != null);
+            Debug.Assert(guid != null);
 
-            this.hero = hero;
+            // Tell host hero init is done
             session.Client.HeroInitDone(true);
 
-            guid = session.Client.Guid;
+            // Optimistic local update: we know we just sent HeroInitDone, so update local state immediately
+            if (session.Client.LobbyInfo.Guests.ContainsKey(guid))
+            {
+                session.Client.LobbyInfo.Guests[guid].HeroInitDone = true;
+            }
 
-            Debug.Assert(session.Client.LobbyInfo != null);
+            // Refresh full state from host (for any other changes)
+            await session.Client.RefreshLobbyInfo();
+            await session.Client.RefreshGameSessionInfo();
 
-
-            object Info;
-            if (isOwner)
-                Info = session.Client.LobbyInfo;
-            else
-                Info = GetCurrentGuestInfo();
-
+            // Always populate GuestInfo for all players
+            GuestInfo = GetCurrentGuestInfo();
 
             var options = new JsonSerializerOptions { WriteIndented = true };
-            logger.Information("GuestInfo: {Json}", JsonSerializer.Serialize(Info, options));
-
-
+            logger.Information("GuestInfo: {Json}", JsonSerializer.Serialize(GuestInfo, options));
             logger.Information("Game Base info {F1},", JsonSerializer.Serialize(session.Client.gameSessionInfo, options));
         }
 
@@ -61,14 +73,19 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         }
 
-        public GuestInfo GetCurrentGuestInfo()
+        public GuestInfo? GetCurrentGuestInfo()
         {
             Debug.Assert(session.Client.LobbyInfo != null);
             Debug.Assert(guid != null);
 
-            GuestInfo = session.Client.LobbyInfo.Guests[guid];
+            if (session.Client.LobbyInfo.Guests.TryGetValue(guid, out var info))
+            {
+                GuestInfo = info;
+                return GuestInfo;
+            }
 
-            return GuestInfo;
+            logger.Warning("Guest {guid} not found in LobbyInfo.Guests", guid);
+            return null;
         }
 
 

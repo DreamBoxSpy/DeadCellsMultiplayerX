@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /DeadCellsMultiplayerX/Properties/launchSettings.json
 .vscode/settings.json
+.omo/

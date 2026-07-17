@@ -137,6 +137,18 @@ namespace DeadCellsMultiplayerX.Client.Guest
             return sw.ElapsedMilliseconds;
         }
 
+        public async Task RefreshLobbyInfo()
+        {
+            Debug.Assert(hostInterfact != null);
+            LobbyInfo = await hostInterfact.GetLobbyInfo();
+        }
+
+        public async Task RefreshGameSessionInfo()
+        {
+            Debug.Assert(hostInterfact != null);
+            gameSessionInfo = await hostInterfact.GetGameSessionInfo();
+        }
+
         public void Quit()
         {
             Debug.Assert(hostInterfact != null);
@@ -149,11 +161,11 @@ namespace DeadCellsMultiplayerX.Client.Guest
             Dispose();
         }
 
-        void IOnGuestHeroInitDone.OnHeroInitDone(Hero hero)
+        async void IOnGuestHeroInitDone.OnHeroInitDone(Hero hero)
         {
             Debug.Assert(session != null);
 
-            guestHeroManager = new GuestHeroManager(session, Log.ForContext<GuestHeroManager>(), hero);
+            guestHeroManager = await GuestHeroManager.CreateAsync(session, Log.ForContext<GuestHeroManager>(), hero);
         }
     }
 }
