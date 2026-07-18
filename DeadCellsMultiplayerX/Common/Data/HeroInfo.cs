@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace DeadCellsMultiplayerX.Client.Guest.WorldX.GuestHero
+namespace DeadCellsMultiplayerX.Common.Data
 {
-    public class TxBhMovement
+    public class HeroInfo : EntityInfo
     {
 
     }

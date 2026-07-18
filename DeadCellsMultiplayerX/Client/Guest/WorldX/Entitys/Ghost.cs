@@ -31,11 +31,10 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
         private double posToX, posToY;
         private double posCurX, posCurY;
         private double posProgress;
-        private double smoothDurationMs = DefaultDurationMs;
+        private double smoothDurationMs = 50;
         private const double SmoothingFactor = 0.3;   // 新区间的EMA权重
         private const int MinDurationMs = 20;
         private const int MaxDurationMs = 120;
-        private const int DefaultDurationMs = 50;
         private const double TilePx = 24.0;
 
         /// <summary>
@@ -90,17 +89,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
             }
         }
 
-        /// <summary>
-        /// 根据最近两次接收到的快照之间的原始包间隔，更新平滑插值的持续时间。
-        /// 使用指数移动平均法来抑制抖动。
-        /// </summary>
-        private void UpdateSmoothDuration()
-        {
-            long rawInterval = CurrentState!.TimeStamp - PrevState!.TimeStamp;
-            smoothDurationMs = smoothDurationMs * (1.0 - SmoothingFactor)
-                              + rawInterval * SmoothingFactor;
-            smoothDurationMs = System.Math.Clamp(smoothDurationMs, MinDurationMs, MaxDurationMs);
-        }
 
         /// <summary>
         /// 应用一个新的、由服务器确定的目标位置。
@@ -115,7 +103,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
             {
                 posFromX = posToX = posCurX = targetX;
                 posFromY = posToY = posCurY = targetY;
-                smoothDurationMs = DefaultDurationMs;
                 CommitPosition(targetX, targetY);
                 EnsurePositionTween();
                 return;
@@ -129,14 +116,11 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
             {
                 posFromX = posToX = posCurX = targetX;
                 posFromY = posToY = posCurY = targetY;
-                smoothDurationMs = DefaultDurationMs;
                 CommitPosition(targetX, targetY);
                 EnsurePositionTween();
                 return;
             }
 
-            //根据数据包间隔计算动态持续时间
-            UpdateSmoothDuration();
 
             //从当前渲染位置继续
             posFromX = posCurX;

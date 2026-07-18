@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using dc.en;
 using DeadCellsMultiplayerX.Client.Guest.WorldX.Entities;
+using DeadCellsMultiplayerX.Client.Guest.WorldX.TXGuestBeheaded;
 using ModCore.Events;
 using ModCore.Events.Interfaces.Game;
 using ModCore.Events.Interfaces.Game.Hero;
@@ -15,7 +16,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
     IOnFrameUpdate
     {
         private readonly GuestClientSession session;
-        private readonly ILogger logger;
+        public readonly ILogger logger;
         public PlayerGhost? RemoteHero { get; private set; }
         public GuestInfo? GuestInfo { get; private set; }
         public Hero? hero { get; set; }
@@ -24,6 +25,8 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         public string? guid { get; set; }
         public bool isOwner { get; }
+
+        private readonly List<TransmitBeheaded> modules = new();
         public static async Task<TXGuestHeroManager> CreateAsync(GuestClientSession session, ILogger logger, Hero hero)
         {
             var manager = new TXGuestHeroManager(session, logger, hero);
@@ -64,14 +67,40 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             logger.Information("\n Game Base info {F1},", JsonSerializer.Serialize(session.Client.gameSessionInfo, options));
         }
 
+        public T Register<T>(T module) where T : TransmitBeheaded
+        {
+            module.Initialize();
+            modules.Add(module);
+            return module;
+        }
+
+        public void Unregister(TransmitBeheaded module)
+        {
+            module.Dispose();
+            modules.Remove(module);
+        }
+
         public void FrameUpdate()
         {
+            if (hero == null)
+                return;
 
+            bool dirty = false;
+
+            foreach (var module in modules)
+            {
+                module.Tick();
+
+                dirty = true;
+            }
+
+            if (!dirty)
+                return;
         }
 
         public void HeroUpdate(Hero hero)
         {
-            
+
         }
 
         public GuestInfo? GetCurrentGuestInfo()

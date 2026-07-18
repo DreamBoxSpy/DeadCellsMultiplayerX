@@ -122,9 +122,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         public void ApplyAreaInfo(List<EntityInfo> entities, Level lvl)
         {
-            foreach (var g in ghosts.Values)
-                g.visible = false;
-
             foreach (var info in entities)
                 ApplyEntityInfo(info, lvl);
         }
@@ -139,8 +136,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                 ghost.init(info, this);
                 ghosts.Add(info.GUID, ghost);
             }
-
-            ghost.visible = true;
             ghost.ApplyUpdate(info);
         }
 
