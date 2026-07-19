@@ -2,7 +2,10 @@ using System.Diagnostics;
 using System.Text.Json;
 using dc.en;
 using DeadCellsMultiplayerX.Client.Guest.WorldX.Entities;
+using DeadCellsMultiplayerX.Client.Guest.WorldX.GuestHero;
 using DeadCellsMultiplayerX.Client.Guest.WorldX.TXGuestBeheaded;
+using DeadCellsMultiplayerX.Common.Data;
+using Microsoft.VisualStudio.Threading;
 using ModCore.Events;
 using ModCore.Events.Interfaces.Game;
 using ModCore.Events.Interfaces.Game.Hero;
@@ -19,18 +22,25 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         public readonly ILogger logger;
         public PlayerGhost? RemoteHero { get; private set; }
         public GuestInfo? GuestInfo { get; private set; }
+        public PlyerGameSessionInfo? plyerGameInfo { get; private set; }
         public Hero? hero { get; set; }
+        public CancellationTokenSource loopCts = default!;
         public string? RemoteSkinId { get; private set; }
         public string? RemoteHeadSkinId { get; private set; }
 
         public string? guid { get; set; }
         public bool isOwner { get; }
+        public bool heroReady { get; private set; } = false;
+
+        public HeroInfo Baseinfo = new();
 
         private readonly List<TransmitBeheaded> modules = new();
         public static async Task<TXGuestHeroManager> CreateAsync(GuestClientSession session, ILogger logger, Hero hero)
         {
             var manager = new TXGuestHeroManager(session, logger, hero);
             await manager.InitializeAsync();
+            manager.loopCts = new CancellationTokenSource();
+            manager.StartSyncLoop(manager.loopCts.Token).Forget();
             return manager;
         }
 
@@ -54,6 +64,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
             // Tell host hero init is done
             await session.Client.HeroInitDone(true);
+            heroReady = true;
 
             // Refresh full state from host (for any other changes)
             await session.Client.RefreshLobbyInfo();
@@ -61,10 +72,53 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
             // Always populate GuestInfo for all players
             GuestInfo = GetCurrentGuestInfo();
+            plyerGameInfo = GetCurrnetGameSessionInfo();
+
 
             var options = new JsonSerializerOptions { WriteIndented = true };
             logger.Information("\n GuestInfo: {Json}", JsonSerializer.Serialize(GuestInfo, options));
-            logger.Information("\n Game Base info {F1},", JsonSerializer.Serialize(session.Client.gameSessionInfo, options));
+            logger.Information("\n Game Base info {F1},", JsonSerializer.Serialize(plyerGameInfo, options));
+
+
+            Register(new TxBhAnimation(session, this));
+            Register(new TxBhMainHSprite(session, this));
+            Register(new TxBhMovement(session, this));
+        }
+
+
+        /// <summary>
+        /// 用于固定更新 Hero 与 game 所关联的基本信息
+        /// </summary>
+        /// <returns></returns>
+        public async Task StartSyncLoop(CancellationToken ct)
+        {
+            SynchronizationContext.SetSynchronizationContext(
+                ModCore.Modules.Game.SynchronizationContext);
+
+            while (ct.IsCancellationRequested)
+            {
+                if (hero == null || hero.destroyed || !hero.initDone)
+                {
+                    heroReady = false;
+                    await session.Client.HeroInitDone(heroReady);
+                }
+
+                await Task.Delay(1000);
+
+
+                await session.Client.RefreshGameSessionInfo();
+            }
+        }
+
+        public HeroInfo ReplicatingHeroInfo()
+        {
+            Baseinfo.Ready = heroReady;
+            foreach (var module in modules.Where(m => m.ShouldSync()))
+            {
+                module.Fill(Baseinfo);
+            }
+
+            return Baseinfo;
         }
 
         public T Register<T>(T module) where T : TransmitBeheaded
@@ -82,20 +136,15 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         public void FrameUpdate()
         {
-            if (hero == null)
+            if (hero == null || hero.spr == null)
                 return;
 
-            bool dirty = false;
 
             foreach (var module in modules)
             {
                 module.Tick();
-
-                dirty = true;
             }
 
-            if (!dirty)
-                return;
         }
 
         public void HeroUpdate(Hero hero)
@@ -118,9 +167,27 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
             return null;
         }
 
+        public PlyerGameSessionInfo? GetCurrnetGameSessionInfo()
+        {
+            Debug.Assert(session.Client.gameSessionInfo != null);
+            Debug.Assert(guid != null);
+
+            if (session.Client.gameSessionInfo.PlyerGameSession.TryGetValue(guid, out var info))
+            {
+                plyerGameInfo = info;
+                return plyerGameInfo;
+            }
+
+            logger.Warning("Guest {guid} not found in GameSessionInfo.PlyerGameSession", guid);
+            return null;
+        }
+
 
         public void Clear()
         {
+            loopCts.Cancel();
+            loopCts.Dispose();
+            loopCts = null!;
             RemoteHero?.destroy();
             hero = null;
             RemoteHero = null;

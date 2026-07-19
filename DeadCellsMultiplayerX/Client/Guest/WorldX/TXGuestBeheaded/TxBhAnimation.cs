@@ -32,7 +32,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.GuestHero
             return true;
         }
 
-        public override HeroInfo Fill(HeroInfo info)
+        public override void Fill(HeroInfo info)
         {
             temp = previous;
             previous = current;
@@ -42,7 +42,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.GuestHero
 
 
             info.animInfo = current.Clone();
-            return info;
         }
 
         public override void Reset()

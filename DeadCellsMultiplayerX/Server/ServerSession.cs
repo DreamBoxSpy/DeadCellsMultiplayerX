@@ -1,4 +1,6 @@
-﻿using DeadCellsMultiplayerX.Common;
+﻿using dc.en;
+using DeadCellsMultiplayerX.Common;
+using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Server.Connection;
 using Microsoft.VisualStudio.Threading;
 using ModCore;
@@ -71,7 +73,7 @@ namespace DeadCellsMultiplayerX.Server
             Debug.Assert(multiplexingStream != null);
 
             byte[] numBuffer = new byte[4];
-            while(true)
+            while (true)
             {
                 await Task.Delay(1);
 
@@ -79,7 +81,7 @@ namespace DeadCellsMultiplayerX.Server
 
                 var channelId = BitConverter.ToInt32(numBuffer);
 
-                if(channelId == -1)
+                if (channelId == -1)
                 {
                     return; //加载完成
                 }
@@ -89,6 +91,18 @@ namespace DeadCellsMultiplayerX.Server
                 var channel = multiplexingStream.AcceptChannel(channelId);
                 guests.Add(new SGuestConnection(this, channel.AsStream()));
             }
+        }
+
+
+        public async Task<List<HeroInfo>> GetGuestsHeroInfos()
+        {
+            List<HeroInfo> infos = [];
+            foreach (var item in guests)
+            {
+                infos.Add(await item.guest.RequestHeroInfo());
+            }
+
+            return infos;
         }
 
         private void UpdateTimeStamp()

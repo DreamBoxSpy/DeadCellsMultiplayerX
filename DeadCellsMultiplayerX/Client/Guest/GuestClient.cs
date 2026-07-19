@@ -5,6 +5,7 @@ using DeadCellsMultiplayerX.Client.Event;
 using DeadCellsMultiplayerX.Client.Guest.WorldX;
 using DeadCellsMultiplayerX.Client.Host;
 using DeadCellsMultiplayerX.Client.Networks;
+using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Utils;
 using Serilog;
 using StreamJsonRpc;
@@ -19,7 +20,7 @@ namespace DeadCellsMultiplayerX.Client.Guest
         private JsonRpc? rpc;
         private IHostClientRPC? hostInterfact;
         private GuestClientSession? session;
-        private TXGuestHeroManager? guestHeroManager;
+        public TXGuestHeroManager? guestHeroManager;
 
         public CancellationTokenSource DisconnectToken { get; } = new();
 

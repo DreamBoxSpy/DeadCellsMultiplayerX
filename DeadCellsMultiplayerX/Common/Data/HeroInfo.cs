@@ -7,6 +7,6 @@ namespace DeadCellsMultiplayerX.Common.Data
 {
     public class HeroInfo : EntityInfo
     {
-
+        public bool Ready { get; set; }
     }
 }

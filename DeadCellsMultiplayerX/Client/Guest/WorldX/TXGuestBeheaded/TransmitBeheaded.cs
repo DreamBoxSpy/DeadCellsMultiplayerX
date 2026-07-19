@@ -19,9 +19,9 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.TXGuestBeheaded
 
         protected TransmitBeheaded(GuestClientSession Session, TXGuestHeroManager manager)
         {
-            Debug.Assert(session != null);
             session = Session;
             Manager = manager;
+            Debug.Assert(session != null);
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.TXGuestBeheaded
         /// <summary>
         /// 填充数据
         /// </summary>
-        public abstract HeroInfo Fill(HeroInfo info);
+        public abstract void Fill(HeroInfo info);
 
         /// <summary>
         /// 释放资源

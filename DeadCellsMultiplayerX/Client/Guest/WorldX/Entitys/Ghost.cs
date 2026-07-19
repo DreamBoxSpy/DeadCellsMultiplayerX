@@ -218,19 +218,14 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
 
             if (spr == null) return;
 
+            dir = CurrentState.PosVector.DIR;
+
             ApplyNetworkTarget(CurrentState.PosVector, firstTime);
 
             DisableGameplay();
             UpdateAnim(CurrentState);
 
             OnApplyUpdate(incoming, firstTime);
-            SyncFacing(incoming);
-        }
-
-        private void SyncFacing(EntityInfo info)
-        {
-            if (info.EntityData.IntValues.TryGetValue("dir", out var fr))
-                dir = fr;
         }
 
         public void UpdateAnim(EntityInfo info)
