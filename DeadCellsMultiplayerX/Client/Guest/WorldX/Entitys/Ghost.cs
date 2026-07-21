@@ -26,110 +26,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
         private string? lastColorMapSkin;
         private string lastGroup = "";
 
-        private Tween? posTween;
-        private double posFromX, posFromY;
-        private double posToX, posToY;
-        private double posCurX, posCurY;
-        private double posProgress;
-        private double smoothDurationMs = 50;
-        private const double SmoothingFactor = 0.3;   // 新区间的EMA权重
-        private const int MinDurationMs = 20;
-        private const int MaxDurationMs = 120;
-        private const double TilePx = 24.0;
 
-        /// <summary>
-        /// 在跳过插值前的最大像素距离
-        /// </summary>
-        protected virtual double TeleportThresholdPx => 300.0;
-
-        /// <summary>
-        /// 通过 setPosCase 将插值后的像素位置写入实体的
-        /// </summary>
-        private void CommitPosition(double pixelX, double pixelY)
-        {
-            int tcx = (int)(pixelX / TilePx);
-            int tcy = (int)(pixelY / TilePx);
-            double txr = (pixelX - tcx * TilePx) / TilePx;
-            double tyr = (pixelY - tcy * TilePx) / TilePx;
-            setPosCase(tcx, tcy, txr, tyr);
-        }
-
-        /// <summary>
-        /// 创建或重新定位单点补间。
-        /// 该补间对归一化进度 0→1 进行插值；
-        /// 该设置器根据 <see cref="posFromX/Y"/> 和 <see cref="posToX/Y"/>.
-        /// </summary>
-        private void EnsurePositionTween()
-        {
-            double speed = 1.0 / (smoothDurationMs * tw.baseFps / 1000.0);
-
-            if (posTween != null && !posTween.done)
-            {
-                posTween.from = 0.0;
-                posTween.to = 1.0;
-                posTween.ln = 0.0;
-                posTween.speed = speed;
-            }
-            else
-            {
-                posTween = tw.create_(
-                    getter: () => posProgress,
-                    setter: (val) =>
-                    {
-                        posProgress = val;
-                        posCurX = posFromX + val * (posToX - posFromX);
-                        posCurY = posFromY + val * (posToY - posFromY);
-                        CommitPosition(posCurX, posCurY);
-                    },
-                    from: 0.0, to: 1.0,
-                    tp: new TType.TLinear(),
-                    duration_ms: smoothDurationMs,
-                    allowDuplicates: Ref<bool>.In(true)
-                );
-            }
-        }
-
-
-        /// <summary>
-        /// 应用一个新的、由服务器确定的目标位置。
-        /// 保持视觉连续性。
-        /// </summary>
-        private void ApplyNetworkTarget(PosVector pos, bool firstTime)
-        {
-            double targetX = pos.CX * TilePx + pos.XR * TilePx;
-            double targetY = pos.CY * TilePx + pos.XY * TilePx;
-
-            if (firstTime)
-            {
-                posFromX = posToX = posCurX = targetX;
-                posFromY = posToY = posCurY = targetY;
-                CommitPosition(targetX, targetY);
-                EnsurePositionTween();
-                return;
-            }
-
-            // 识别是否是传送
-            double threshold = TeleportThresholdPx;
-            double dx = targetX - posCurX;
-            double dy = targetY - posCurY;
-            if (dx * dx + dy * dy > threshold * threshold)
-            {
-                posFromX = posToX = posCurX = targetX;
-                posFromY = posToY = posCurY = targetY;
-                CommitPosition(targetX, targetY);
-                EnsurePositionTween();
-                return;
-            }
-
-
-            //从当前渲染位置继续
-            posFromX = posCurX;
-            posFromY = posCurY;
-            posToX = targetX;
-            posToY = targetY;
-
-            EnsurePositionTween();
-        }
 
 
         protected abstract void OnApplyUpdate(EntityInfo incoming, bool firstTime);
@@ -218,15 +115,20 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
 
             if (spr == null) return;
 
-            dir = CurrentState.PosVector.DIR;
+            
 
             ApplyNetworkTarget(CurrentState.PosVector, firstTime);
-
             DisableGameplay();
             UpdateAnim(CurrentState);
-
             OnApplyUpdate(incoming, firstTime);
         }
+
+        private void ApplyNetworkTarget(PosVector pos, bool firstTime)
+        {
+            setPosCase(pos.CX, pos.CY, pos.XR, pos.XY);
+            dir = pos.DIR;
+        }
+
 
         public void UpdateAnim(EntityInfo info)
         {
