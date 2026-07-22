@@ -10,7 +10,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
     {
         public EntityGhost(Level lvl, string guid) : base(lvl, guid) { }
 
-        protected override void OnApplyUpdate(EntityInfo info, bool firstTime)
+        protected override void OnApplyUpdate(EntityInfo info)
         {
 
         }

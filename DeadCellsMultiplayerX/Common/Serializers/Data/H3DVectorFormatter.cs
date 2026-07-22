@@ -28,6 +28,10 @@ namespace DeadCellsMultiplayerX.Common.Serializers.Data
             if (reader.TryReadNil())
                 return new Vector(Ref<double>.In(0), Ref<double>.In(0), Ref<double>.In(0), Ref<double>.In(0));
 
+            int count = reader.ReadArrayHeader();
+            if (count != 4)
+                throw new InvalidOperationException($"Expected array of length 4, got {count}");
+
             double x = reader.ReadDouble();
             double y = reader.ReadDouble();
             double z = reader.ReadDouble();

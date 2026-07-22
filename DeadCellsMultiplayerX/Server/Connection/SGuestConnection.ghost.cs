@@ -142,7 +142,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
 
             inf.SubLevelId = e._level.GetSubLevelIndex();
             inf.EntityData.Serialize(e, typeof(Entity));
-            inf.TimeStamp = Session.CurrentTimeStamp;
+            inf.remoteTime = Session.CurrentTimeStamp;
 
 
             if (e.spr != null)

@@ -115,7 +115,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         public HeroInfo ReplicatingHeroInfo()
         {
             Baseinfo.Ready = heroReady;
-            Baseinfo.TimeStamp = session.CurrentTimeStamp;
             foreach (var module in modules.Where(m => m.ShouldSync()))
             {
                 module.Fill(Baseinfo);

@@ -123,7 +123,11 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
         public void ApplyAreaInfo(List<EntityInfo> entities, Level lvl)
         {
             foreach (var info in entities)
+            {
+                info.localTime = session.CurrentTimeStamp;
                 ApplyEntityInfo(info, lvl);
+            }
+                
         }
 
         public void ApplyEntityInfo(EntityInfo info, Level? lvl = null)
