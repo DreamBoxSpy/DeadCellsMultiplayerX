@@ -30,6 +30,7 @@ namespace DeadCellsMultiplayerX.Common.Data
         [Key(2)] public ulong PackedB;
         [Key(3)] public ulong PackedC;
         [Key(4)] public ulong PackedD;
+        [Key(5)] public string GroupName = string.Empty;
 
         public const ulong FrameMask = (1UL << 31) - 1;
         public const ulong PausedMask = 1UL << 31;
@@ -91,5 +92,21 @@ namespace DeadCellsMultiplayerX.Common.Data
             set => PackedD = (PackedD & ~CursorMask) | ((uint)value & CursorMask);
         }
         public AnimInfo() { }
+
+        public AnimInfo Clone()
+        {
+            var clone = (AnimInfo)MemberwiseClone();
+            clone.AnimTransitions = AnimTransitions;
+            return clone;
+        }
+
+        public void CopyFrom(AnimInfo source)
+        {
+            PackedA = source.PackedA;
+            PackedB = source.PackedB;
+            PackedC = source.PackedC;
+            PackedD = source.PackedD;
+            GroupName = source.GroupName;
+        }
     }
 }

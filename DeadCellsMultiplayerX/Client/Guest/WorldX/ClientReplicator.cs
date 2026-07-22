@@ -57,7 +57,7 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
             while (true)
             {
-                await Task.Delay(1000 / 30);
+                await Task.Delay(1000 / 60);
                 // TODO: 接入 DisposeToken
                 session.DisposeToken.ThrowIfCancellationRequested();
 
@@ -122,11 +122,12 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
 
         public void ApplyAreaInfo(List<EntityInfo> entities, Level lvl)
         {
-            foreach (var g in ghosts.Values)
-                g.visible = false;
-
             foreach (var info in entities)
+            {
+                info.localTime = session.CurrentTimeStamp;
                 ApplyEntityInfo(info, lvl);
+            }
+                
         }
 
         public void ApplyEntityInfo(EntityInfo info, Level? lvl = null)
@@ -139,8 +140,6 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX
                 ghost.init(info, this);
                 ghosts.Add(info.GUID, ghost);
             }
-
-            ghost.visible = true;
             ghost.ApplyUpdate(info);
         }
 

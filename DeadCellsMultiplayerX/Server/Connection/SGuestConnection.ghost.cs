@@ -142,7 +142,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
 
             inf.SubLevelId = e._level.GetSubLevelIndex();
             inf.EntityData.Serialize(e, typeof(Entity));
-            inf.TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            inf.remoteTime = Session.CurrentTimeStamp;
 
 
             if (e.spr != null)
@@ -183,7 +183,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
             return false;
         }
 
-        private bool TryUpdateEntity(Entity e)
+        public bool TryUpdateEntity(Entity e)
         {
             if (TryGetInfoIfVisable(e, out var inf))
             {

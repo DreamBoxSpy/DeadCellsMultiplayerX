@@ -1,6 +1,8 @@
 ﻿using dc;
 using dc.en;
 using dc.en.inter;
+using dc.hxd.res;
+using dc.libs.heaps.slib;
 using dc.pr;
 using dc.tool;
 using DeadCellsMultiplayerX.Client.Guest.WorldX;
@@ -308,6 +310,13 @@ namespace DeadCellsMultiplayerX.Client.Guest
         public void UpdateEntity(EntityInfo info)
         {
             replicator?.ApplyEntityInfo(info, null);
+        }
+
+        public Task<HeroInfo> RequestHeroInfo()
+        {
+            Debug.Assert(client.guestHeroManager != null);
+
+            return Task.FromResult(client.guestHeroManager.ReplicatingHeroInfo());
         }
     }
 }

@@ -113,7 +113,7 @@ namespace DeadCellsMultiplayerX.Server.Connection
 
                 foreach (Entity v in lvl.entities)
                 {
-                    if(v is Interactive)
+                    if (v is Interactive)
                     {
                         continue;
                     }
@@ -129,6 +129,12 @@ namespace DeadCellsMultiplayerX.Server.Connection
                         areaInfo.Entities.Add(inf);
                     }
                 }
+            }
+
+            foreach (var item in await Session.GetGuestsHeroInfos())
+            {
+                item.remoteTime = Session.CurrentTimeStamp;
+                areaInfo.Entities.Add(item);
             }
 
             return areaInfo;

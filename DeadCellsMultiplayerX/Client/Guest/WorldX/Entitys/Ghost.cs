@@ -11,6 +11,10 @@ using DeadCellsMultiplayerX.Common.Data;
 using DeadCellsMultiplayerX.Common.Serializers;
 using Serilog.Core;
 using Serilog;
+using Mirror;
+using System.Timers;
+using dc.hxd;
+using DeadCellsMultiplayerX.Common;
 
 namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
 {
@@ -18,137 +22,37 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
     {
         public string GUID { get; }
 
-        public EntityInfo? PrevState { get; private set; }
-        public EntityInfo? CurrentState { get; private set; }
-        public bool IsFirstUpdate => PrevState == null;
-
         private string? lastColorMapModel;
         private string? lastColorMapSkin;
         private string lastGroup = "";
 
-        private Tween? posTween;
-        private double posFromX, posFromY;
-        private double posToX, posToY;
-        private double posCurX, posCurY;
-        private double posProgress;
-        private double smoothDurationMs = DefaultDurationMs;
-        private const double SmoothingFactor = 0.3;   // 新区间的EMA权重
-        private const int MinDurationMs = 20;
-        private const int MaxDurationMs = 120;
-        private const int DefaultDurationMs = 50;
+        private dc.libs.Process? interpolationProcess; //挂载位置渲染程序
+
+
+        private double visualX, visualY;   // 实际渲染位置
+        private bool visualInit;//是否首次渲染
+
+
+        /// <summary>
+        /// Mirror参数
+        /// </summary>
+        private SortedList<double, GhostSnapshot> snapshotBuffer = new();// 快照缓冲区，按远程时间排序，用于插值
+        private const float sendInterval = 1f / 60f; // 服务器快照发送间隔（60Hz）
+        private double bufferTime = 0.1; // 本地时间线落后服务器的目标缓冲时间（秒）
+        private int bufferLimit = 64; // 缓冲区最大快照数量，防止内存无限增长
+        private const double catchupSpeed = 0; // 追赶加速比例
+        private const double slowdownSpeed = 0; // 减速比例
+        private const float catchupNegativeThreshold = -0.5f;  // 触发减速的漂移负阈值（sendInterval的倍数，当前无效）
+        private const float catchupPositiveThreshold = 2f;  // 触发加速的漂移正阈值（sendInterval的倍数，当前无效）
+        private double localTimeline; // 本地插值时间线，始终落后服务器 latestRemoteTime - bufferTime
+        private double localTimescale; // 时间缩放因子，用于追赶/减速，当前恒为1.0
+        private ExponentialMovingAverage driftEma = new(10); // 漂移量（latestRemoteTime - localTimeline）的指数移动平均
+        private ExponentialMovingAverage deliveryTimeEma = new(10); // 快照交付间隔的指数移动平均，备用动态缓冲调整
+
+
         private const double TilePx = 24.0;
 
-        /// <summary>
-        /// 在跳过插值前的最大像素距离
-        /// </summary>
-        protected virtual double TeleportThresholdPx => 300.0;
-
-        /// <summary>
-        /// 通过 setPosCase 将插值后的像素位置写入实体的
-        /// </summary>
-        private void CommitPosition(double pixelX, double pixelY)
-        {
-            int tcx = (int)(pixelX / TilePx);
-            int tcy = (int)(pixelY / TilePx);
-            double txr = (pixelX - tcx * TilePx) / TilePx;
-            double tyr = (pixelY - tcy * TilePx) / TilePx;
-            setPosCase(tcx, tcy, txr, tyr);
-        }
-
-        /// <summary>
-        /// 创建或重新定位单点补间。
-        /// 该补间对归一化进度 0→1 进行插值；
-        /// 该设置器根据 <see cref="posFromX/Y"/> 和 <see cref="posToX/Y"/>.
-        /// </summary>
-        private void EnsurePositionTween()
-        {
-            double speed = 1.0 / (smoothDurationMs * tw.baseFps / 1000.0);
-
-            if (posTween != null && !posTween.done)
-            {
-                posTween.from = 0.0;
-                posTween.to = 1.0;
-                posTween.ln = 0.0;
-                posTween.speed = speed;
-            }
-            else
-            {
-                posTween = tw.create_(
-                    getter: () => posProgress,
-                    setter: (val) =>
-                    {
-                        posProgress = val;
-                        posCurX = posFromX + val * (posToX - posFromX);
-                        posCurY = posFromY + val * (posToY - posFromY);
-                        CommitPosition(posCurX, posCurY);
-                    },
-                    from: 0.0, to: 1.0,
-                    tp: new TType.TLinear(),
-                    duration_ms: smoothDurationMs,
-                    allowDuplicates: Ref<bool>.In(true)
-                );
-            }
-        }
-
-        /// <summary>
-        /// 根据最近两次接收到的快照之间的原始包间隔，更新平滑插值的持续时间。
-        /// 使用指数移动平均法来抑制抖动。
-        /// </summary>
-        private void UpdateSmoothDuration()
-        {
-            long rawInterval = CurrentState!.TimeStamp - PrevState!.TimeStamp;
-            smoothDurationMs = smoothDurationMs * (1.0 - SmoothingFactor)
-                              + rawInterval * SmoothingFactor;
-            smoothDurationMs = System.Math.Clamp(smoothDurationMs, MinDurationMs, MaxDurationMs);
-        }
-
-        /// <summary>
-        /// 应用一个新的、由服务器确定的目标位置。
-        /// 保持视觉连续性。
-        /// </summary>
-        private void ApplyNetworkTarget(PosVector pos, bool firstTime)
-        {
-            double targetX = pos.CX * TilePx + pos.XR * TilePx;
-            double targetY = pos.CY * TilePx + pos.XY * TilePx;
-
-            if (firstTime)
-            {
-                posFromX = posToX = posCurX = targetX;
-                posFromY = posToY = posCurY = targetY;
-                smoothDurationMs = DefaultDurationMs;
-                CommitPosition(targetX, targetY);
-                EnsurePositionTween();
-                return;
-            }
-
-            // 识别是否是传送
-            double threshold = TeleportThresholdPx;
-            double dx = targetX - posCurX;
-            double dy = targetY - posCurY;
-            if (dx * dx + dy * dy > threshold * threshold)
-            {
-                posFromX = posToX = posCurX = targetX;
-                posFromY = posToY = posCurY = targetY;
-                smoothDurationMs = DefaultDurationMs;
-                CommitPosition(targetX, targetY);
-                EnsurePositionTween();
-                return;
-            }
-
-            //根据数据包间隔计算动态持续时间
-            UpdateSmoothDuration();
-
-            //从当前渲染位置继续
-            posFromX = posCurX;
-            posFromY = posCurY;
-            posToX = targetX;
-            posToY = targetY;
-
-            EnsurePositionTween();
-        }
-
-
-        protected abstract void OnApplyUpdate(EntityInfo incoming, bool firstTime);
+        protected abstract void OnApplyUpdate(EntityInfo incoming);
 
         protected Ghost(Level lvl, string guid) : base(lvl, 0, 0)
         {
@@ -164,10 +68,15 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
             createAttackTarget();
             initGfx(info, client);
             DisableGameplay();
-            easeSpritePos = false;
+            //easeSpritePos = false;
             initClonesGfx();
             if (_level != null && _level.minimap != null && !_level.minimap.destroyed)
                 minimapTracking();
+
+            interpolationProcess = new dc.libs.Process(_level);
+            interpolationProcess.onUpdateCb = new HlAction(OnInterpolationUpdate);
+
+            DisableGameplay();
 
             initDone = true;
             isOnScreen = false;
@@ -228,25 +137,33 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
 
         public void ApplyUpdate(EntityInfo incoming)
         {
-            bool firstTime = IsFirstUpdate;
-            PrevState = CurrentState;
-            CurrentState = incoming;
-
             if (spr == null) return;
 
-            ApplyNetworkTarget(CurrentState.PosVector, firstTime);
+            double remoteSeconds = incoming.remoteTime / 1000.0;
+            double localSeconds = GuestClientSession.SyncedTimeMs / 1000.0;
 
-            DisableGameplay();
-            UpdateAnim(CurrentState);
+            var snap = new GhostSnapshot
+            {
+                State = incoming,
+                remoteTime = remoteSeconds,
+                localTime = localSeconds
+            };
 
-            OnApplyUpdate(incoming, firstTime);
-            SyncFacing(incoming);
-        }
-
-        private void SyncFacing(EntityInfo info)
-        {
-            if (info.EntityData.IntValues.TryGetValue("dir", out var fr))
-                dir = fr;
+            SnapshotInterpolation.InsertAndAdjust(
+                snapshotBuffer,
+                bufferLimit,
+                snap,
+                ref localTimeline,
+                ref localTimescale,
+                sendInterval,
+                bufferTime,
+                catchupSpeed,
+                slowdownSpeed,
+                ref driftEma,
+                catchupNegativeThreshold,
+                catchupPositiveThreshold,
+                ref deliveryTimeEma
+            );
         }
 
         public void UpdateAnim(EntityInfo info)
@@ -272,6 +189,67 @@ namespace DeadCellsMultiplayerX.Client.Guest.WorldX.Entities
                 stack.playDuration = info.animInfo.playDuration;
             }
         }
+
+        void OnInterpolationUpdate()
+        {
+            if (snapshotBuffer.Count == 0) return;
+            float deltaTime = (float)dc.hxd.Timer.Class.dt;
+
+            // 使用 Mirror 快照插值系统，获取当前时间线对应的 from/to 快照和插值因子 t
+            SnapshotInterpolation.Step(
+                snapshotBuffer, deltaTime,
+                ref localTimeline, localTimescale,
+                out GhostSnapshot from, out GhostSnapshot to, out double t);
+
+            // 将格子坐标和归一化偏移转换为全局像素坐标，避免跨格子插值失真
+            double fromPx = from.State.PosVector.CX * TilePx + from.State.PosVector.XR * TilePx;
+            double fromPy = from.State.PosVector.CY * TilePx + from.State.PosVector.XY * TilePx;
+            double toPx = to.State.PosVector.CX * TilePx + to.State.PosVector.XR * TilePx;
+            double toPy = to.State.PosVector.CY * TilePx + to.State.PosVector.XY * TilePx;
+
+            // 在像素空间线性插值，得到当前帧的目标位置
+            double targetX = fromPx + (toPx - fromPx) * t;
+            double targetY = fromPy + (toPy - fromPy) * t;
+
+            dir = to.State.PosVector.DIR;
+
+            //传送检测
+            if (!visualInit ||
+                System.Math.Sqrt((targetX - visualX) * (targetX - visualX) + (targetY - visualY) * (targetY - visualY)) > 600)
+            {
+                visualX = targetX;
+                visualY = targetY;
+                visualInit = true;
+            }
+            else
+            {
+                double tdx = targetX - visualX;
+                double tdy = targetY - visualY;
+                double distance = System.Math.Sqrt(tdx * tdx + tdy * tdy);
+
+                // 微小抖动直接吸附，消除静止状态下的浮点/网络波动
+                if (distance < 0.3)
+                {
+                    visualX = targetX;
+                    visualY = targetY;
+                }
+                else
+                {
+                    // 指数移动平均（EMA）平滑，无追赶，保证视觉匀速且无过冲
+                    const double smoothFactor = 55.0;
+                    double talpha = 1.0 - System.Math.Exp(-smoothFactor * deltaTime);
+                    visualX += tdx * talpha;
+                    visualY += tdy * talpha;
+                }
+            }
+
+            
+            setPosPixel(visualX, visualY);
+            
+            //同时更新位置避免位置与动画不同步
+            UpdateAnim(from.State);
+        }
+
 
         protected void DisableGameplay()
         {
